@@ -1,0 +1,90 @@
+name: ⚾ Baseball Canvas Engine
+
+on:
+  project_card:
+    types: [moved]
+
+jobs:
+  game_logic:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      OWNER: ${{ github.repository_owner }}
+      PROJECT_NUM: 1 
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Run Game Engine
+        run: |
+          cat << 'EOF' > engine.py
+          import os
+          import time
+          import json
+          import subprocess
+
+          def run_gh_cmd(cmd):
+              result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+              return result.stdout.strip()
+
+          def get_project_data():
+              owner = os.environ['OWNER']
+              num = os.environ['PROJECT_NUM']
+              cmd = f'gh project item-list {num} --owner "{owner}" --format json'
+              return json.loads(run_gh_cmd(cmd))
+
+          def move_card_with_delay(item_id, target_column):
+              owner = os.environ['OWNER']
+              num = os.environ['PROJECT_NUM']
+              print(f"移動卡片 {item_id} 至 {target_column}...")
+              cmd = f'gh project item-move {num} --owner "{owner}" --id "{item_id}" --to-column "{target_column}"'
+              run_gh_cmd(cmd)
+              time.sleep(1.2)
+
+          def main():
+              project_data = get_project_data()
+              items = project_data.get('items', [])
+              
+              field = {'At Bat': None, '1B': None, '2B': None, '3B': None}
+              for item in items:
+                  col = item.get('status')
+                  title = item.get('title', '')
+                  item_id = item.get('id')
+                  if col in field:
+                      field[col] = {'id': item_id, 'title': title}
+
+              if field['At Bat']:
+                  card = field['At Bat']
+                  title = card['title']
+                  cid = card['id']
+                  
+                  if "一壘安打" in title:
+                      print("💥 擊出一壘安打！開始跑壘...")
+                      if field['3B']: move_card_with_delay(field['3B']['id'], 'Discard')
+                      if field['2B']: move_card_with_delay(field['2B']['id'], '3B')
+                      if field['1B']: move_card_with_delay(field['1B']['id'], '2B')
+                      move_card_with_delay(cid, '1B')
+                      
+                  elif "二壘安打" in title:
+                      print("💥 擊出二壘安打！連衝兩個壘包...")
+                      if field['3B']: move_card_with_delay(field['3B']['id'], 'Discard')
+                      if field['2B']: move_card_with_delay(field['2B']['id'], 'Discard')
+                      if field['1B']: move_card_with_delay(field['1B']['id'], '3B')
+                      move_card_with_delay(cid, '2B')
+
+                  elif "全壘打" in title:
+                      print("🚀 全壘打！！！清空壘包")
+                      for base in ['3B', '2B', '1B']:
+                          if field[base]: move_card_with_delay(field[base]['id'], 'Discard')
+                      move_card_with_delay(cid, 'Discard')
+
+          if __name__ == "__main__":
+              main()
+          EOF
+          python engine.py
