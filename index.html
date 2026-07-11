@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚾ 棒球看板卡牌遊戲 ⚾</title>
+    <style>
+        body { background-color: #2c3e50; color: #ecf0f1; font-family: sans-serif; text-align: center; padding: 20px; }
+        .game-container { max-width: 500px; margin: 0 auto; background: #34495e; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .card-display { width: 200px; height: 280px; background: #f39c12; border: 6px solid #fff; border-radius: 10px; margin: 20px auto; display: flex; justify-content: center; align-items: center; color: #2c3e50; font-size: 24px; font-weight: bold; }
+        .card-display.hidden { background: #7f8c8d; color: #bdc3c7; }
+        button { padding: 12px 24px; font-size: 18px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; margin: 10px; }
+        .btn-shuffle { background: #3498db; color: white; }
+        .btn-draw { background: #2ecc71; color: white; }
+        .status { margin-top: 20px; font-size: 16px; color: #bdc3c7; }
+    </style>
+</head>
+<body>
+    <h1>⚾ 棒球看板卡牌遊戲 ⚾</h1>
+    <div class="game-container">
+        <div id="cardDeck" class="status">剩餘卡牌：36 張</div>
+        <div id="gameCard" class="card-display hidden"><span>請抽牌</span></div>
+        <button class="btn-shuffle" onclick="shuffleDeck()">🃏 洗牌</button>
+        <button class="btn-draw" onclick="drawCard()">⚾ 抽牌</button>
+        <div id="gameLog" class="status" style="color: #f1c40f; font-weight: bold;"></div>
+    </div>
+
+    <script>
+        const baseCards = [
+            ...Array(12).fill("一壘安打"), ...Array(6).fill("二壘安打"),
+            ...Array(2).fill("三壘安打"), ...Array(3).fill("全壘打"),
+            ...Array(10).fill("出局"), ...Array(3).fill("保送")
+        ];
+        let deck = [...baseCards];
+        let currentCard = "";
+
+        function shuffleDeck() {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+            document.getElementById('cardDeck').innerText = `剩餘卡牌：${deck.length} 張`;
+            document.getElementById('gameLog').innerText = "🎲 牌組已重新洗牌！";
+            document.getElementById('gameCard').className = "card-display hidden";
+            document.getElementById('gameCard').innerHTML = "<span>已洗牌</span>";
+        }
+
+        function drawCard() {
+            if (deck.length === 0) {
+                document.getElementById('gameLog').innerText = "❌ 牌拿光了！請點擊洗牌。";
+                return;
+            }
+            currentCard = deck.pop();
+            document.getElementById('cardDeck').innerText = `剩餘卡牌：${deck.length} 張`;
+            const cardElement = document.getElementById('gameCard');
+            cardElement.className = "card-display";
+            cardElement.innerHTML = `<span>${currentCard}</span>`;
+            document.getElementById('gameLog').innerText = `🎯 抽出了：【${currentCard}】！`;
+        }
+    </script>
+</body>
+</html>
