@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚾ MLB 實況動畫模擬賽 ⚾</title>
+    <title>⚾ MLB 實況策略模擬：打擊翻牌版 ⚾</title>
     <style>
         body { background-color: #1a252f; color: #fff; font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; margin: 0; padding: 20px; }
         .game-wrapper { max-width: 850px; margin: 0 auto; background: #2c3e50; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
@@ -31,25 +31,33 @@
         canvas { background-color: #27ae60; display: block; margin: 0 auto; }
 
         /* 操作面板區 */
-        .card-container { background: #34495e; padding: 20px; border-radius: 10px; border: 2px solid #455a64; margin-top: 10px; min-height: 200px;}
-        .cards-row { display: flex; justify-content: center; gap: 20px; margin: 15px 0; min-height: 120px; align-items: center; }
+        .card-container { background: #34495e; padding: 20px; border-radius: 10px; border: 2px solid #455a64; margin-top: 10px; min-height: 220px;}
+        .cards-row { display: flex; justify-content: center; gap: 20px; margin: 15px 0; min-height: 140px; align-items: center; }
         
-        /* 投手按鈕 */
-        .pitch-btn { padding: 20px 40px; font-size: 22px; font-weight: bold; border: 3px solid #fff; border-radius: 10px; cursor: pointer; color: white; transition: transform 0.1s; box-shadow: 0 5px #000;}
+        /* 決策通用按鈕樣式 */
+        .action-btn { padding: 20px 40px; font-size: 22px; font-weight: bold; border: 3px solid #fff; border-radius: 10px; cursor: pointer; color: white; transition: transform 0.1s; box-shadow: 0 5px #000;}
+        .action-btn:active { transform: translateY(3px); box-shadow: 0 2px #000; }
+        
+        /* 按鈕顏色 */
         .pitch-strike { background: #2980b9; }
         .pitch-ball { background: #27ae60; }
-        .pitch-btn:active { transform: translateY(3px); box-shadow: 0 2px #000; }
+        .bat-swing { background: #e74c3c; }
+        .bat-take { background: #f39c12; }
 
-        /* 打擊蓋牌 */
-        .card-slot { width: 90px; height: 130px; perspective: 1000px; cursor: pointer; }
+        /* 打擊成果蓋牌樣式 */
+        .result-card-slot { width: 105px; height: 145px; perspective: 1000px; cursor: pointer; }
         .card-inner { width: 100%; height: 100%; text-align: center; transition: transform 0.5s; transform-style: preserve-3d; position: relative; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
-        .card-slot.flipped .card-inner { transform: rotateY(180deg); }
+        .result-card-slot.flipped .card-inner { transform: rotateY(180deg); }
         
-        .card-front, .card-back { width: 100%; height: 100%; position: absolute; backface-visibility: hidden; display: flex; justify-content: center; align-items: center; border-radius: 8px; border: 3px solid #fff; box-sizing: border-box; font-weight: bold; }
-        .card-back { background: linear-gradient(135deg, #d35400 25%, #e67e22 25%, #e67e22 50%, #d35400 50%, #d35400 75%, #e67e22 75%, #e67e22 100%); background-size: 15px 15px; color: #fff; font-size: 28px; }
-        .card-front { background: #f1c40f; color: #2c3e50; font-size: 16px; transform: rotateY(180deg); }
-        .card-front.bad-card { background: #7f8c8d; color: #fff; }
+        .card-front, .card-back { width: 100%; height: 100%; position: absolute; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 8px; border: 3px solid #fff; box-sizing: border-box; font-weight: bold; }
+        .card-back { background: radial-gradient(circle, #2c3e50 20%, #1a252f 100%); color: #f1c40f; font-size: 32px; border-color: #f1c40f; }
+        .card-front { background: #f1c40f; color: #2c3e50; font-size: 16px; transform: rotateY(180deg); padding: 5px; }
         
+        /* 不同打擊結果的卡牌顏色 */
+        .card-front.hit-safe { background: #2ecc71; color: #fff; }
+        .card-front.hit-out { background: #e74c3c; color: #fff; }
+        .card-front.hit-foul { background: #95a5a6; color: #fff; }
+
         .game-log { margin-top: 15px; font-size: 18px; color: #f1c40f; min-height: 26px; font-weight: bold; background: #111; padding: 8px; border-radius: 5px; }
         .btn-action { padding: 12px 30px; font-size: 18px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; background: #e74c3c; color: white; margin-top: 10px; display: none; }
         .disabled-zone { pointer-events: none; opacity: 0.5; }
@@ -58,7 +66,7 @@
 <body>
 
     <div class="game-wrapper">
-        <h1>⚾ MLB 實況模擬：九局經典動畫賽 ⚾</h1>
+        <h1>⚾ MLB 實況策略模擬：命運打擊翻牌版 ⚾</h1>
 
         <table class="scoreboard">
             <thead>
@@ -119,20 +127,18 @@
     </div>
 
     <script>
-        // --- 核心變數與 Canvas 設定 ---
+        // --- Canvas 與核心座標配置 ---
         const canvas = document.getElementById("fieldCanvas");
         const ctx = canvas.getContext("2d");
 
-        // 定義球場核心座標位置
         const loc = {
-            home:  { x: 180, y: 260 }, // 本壘打擊區
-            pitcher:{ x: 180, y: 170 }, // 投手丘
-            base1: { x: 255, y: 175 }, // 一壘
-            base2: { x: 180, y: 100 }, // 二壘
-            base3: { x: 105, y: 175 }  // 三壘
+            home:  { x: 180, y: 260 },
+            pitcher:{ x: 180, y: 170 },
+            base1: { x: 255, y: 175 },
+            base2: { x: 180, y: 100 },
+            base3: { x: 105, y: 175 }
         };
 
-        // 動態物理球員物件
         let ball = { x: loc.pitcher.x, y: loc.pitcher.y, vx: 0, vy: 0, active: false, radius: 5 };
 
         let gameState = {
@@ -143,16 +149,36 @@
             hitsAway: 0, hitsHome: 0, gameOver: false
         };
 
-        // --- 大聯盟真實打擊概率池 ---
-        function getRandomBattedBallResult() {
+        // 目前翻牌池暫存的擊球數據
+        let currentInPlayOptions = [];
+        let isAICheckGlobal = false;
+
+        // 大聯盟官方真實數據基礎對應表
+        const dataPool = [
+            { type: "界外球", target: { x: 40, y: 180 }, style: "hit-foul" },
+            { type: "一般出局", target: { x: 270, y: 120 }, style: "hit-out" },
+            { type: "雙殺打", target: { x: 160, y: 140 }, style: "hit-out" },
+            { type: "一壘安打", target: { x: 290, y: 90 }, style: "hit-safe" },
+            { type: "二壘安打", target: { x: 220, y: 40 }, style: "hit-safe" },
+            { type: "三壘安打", target: { x: 60, y: 50 }, style: "hit-safe" },
+            { type: "全壘打", target: { x: 180, y: -20 }, style: "hit-safe" }
+        ];
+
+        // 隨機抽取一個大聯盟結果
+        function sampleBattedBall() {
             const rand = Math.random() * 100;
-            if (rand < 42.0) return { type: "界外球", target: { x: 40, y: 180 } };
-            if (rand < 74.0) return { type: "一般出局", target: { x: 270, y: 120 } }; // 內外野高飛接殺
-            if (rand < 79.0) return { type: "雙殺打", target: { x: 160, y: 140 } }; // 內野滾地球
-            if (rand < 92.5) return { type: "一壘安打", target: { x: 290, y: 90 } };
-            if (rand < 97.5) return { type: "二壘安打", target: { x: 220, y: 40 } };
-            if (rand < 98.0) return { type: "三壘安打", target: { x: 60, y: 50 } };
-            return { type: "全壘打", target: { x: 180, y: -20 } }; // 飛出牆外
+            if (rand < 42.0) return dataPool[0]; // 界外
+            if (rand < 74.0) return dataPool[1]; // 一般出局
+            if (rand < 79.0) return dataPool[2]; // 雙殺
+            if (rand < 92.5) return dataPool[3]; // 一安
+            if (rand < 97.5) return dataPool[4]; // 二安
+            if (rand < 98.0) return dataPool[5]; // 三安
+            return dataPool[6]; // 全壘打
+        }
+
+        // 生成三張供玩家翻閱的命運牌
+        function generateThreeCards() {
+            return [sampleBattedBall(), sampleBattedBall(), sampleBattedBall()];
         }
 
         function getRandomAIInboundResult() {
@@ -162,8 +188,6 @@
         // --- Canvas 繪圖渲染引擎 ---
         function drawField() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 1. 繪製棒球場扇形外野線
             ctx.fillStyle = "#27ae60";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
@@ -178,24 +202,22 @@
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // 2. 繪製內野紅土菱形
             ctx.beginPath();
             ctx.moveTo(loc.home.x, loc.home.y);
             ctx.lineTo(loc.base1.x, loc.base1.y);
             ctx.lineTo(loc.base2.x, loc.base2.y);
             ctx.lineTo(loc.base3.x, loc.base3.y);
             ctx.closePath();
-            ctx.fillStyle = "#d35400"; // 紅土地區
+            ctx.fillStyle = "#d35400";
             ctx.fill();
             ctx.strokeStyle = "#fff";
             ctx.stroke();
 
-            // 3. 繪製白色的四個壘包
             const drawBaseSquare = (pos, occupied) => {
                 ctx.save();
                 ctx.translate(pos.x, pos.y);
-                ctx.rotate(Math.rotate * Math.PI / 180 || 45 * Math.PI / 180);
-                ctx.fillStyle = occupied ? "#e74c3c" : "#ffffff"; // 有人留守變紅色
+                ctx.rotate(45 * Math.PI / 180);
+                ctx.fillStyle = occupied ? "#e74c3c" : "#ffffff";
                 ctx.fillRect(-7, -7, 14, 14);
                 ctx.strokeStyle = "#111";
                 ctx.strokeRect(-7, -7, 14, 14);
@@ -205,7 +227,6 @@
             drawBaseSquare(loc.base2, gameState.bases[1]);
             drawBaseSquare(loc.base3, gameState.bases[2]);
             
-            // 本壘板
             ctx.fillStyle = "#fff";
             ctx.beginPath();
             ctx.moveTo(loc.home.x, loc.home.y - 6);
@@ -216,23 +237,20 @@
             ctx.closePath();
             ctx.fill();
 
-            // 4. 繪製守備方紅圈 (Pitcher & Fielders)
             ctx.beginPath();
             ctx.arc(loc.pitcher.x, loc.pitcher.y, 8, 0, Math.PI*2);
-            ctx.fillStyle = "#e74c3c"; // 紅圈防守方
+            ctx.fillStyle = "#e74c3c";
             ctx.fill();
             ctx.strokeStyle = "#fff";
             ctx.stroke();
 
-            // 5. 繪製攻擊方藍圈 (Batter)
             ctx.beginPath();
             ctx.arc(loc.home.x - 20, loc.home.y, 8, 0, Math.PI*2);
-            ctx.fillStyle = "#3498db"; // 藍圈進攻方打者
+            ctx.fillStyle = "#3498db";
             ctx.fill();
             ctx.strokeStyle = "#fff";
             ctx.stroke();
 
-            // 6. 繪製飛行的白色棒球
             if (ball.active) {
                 ctx.beginPath();
                 ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
@@ -244,29 +262,23 @@
             }
         }
 
-        // --- 物理動畫循環引擎 ---
         let animId;
         function animateBall(startX, startY, endX, endY, speed, callback) {
             ball.x = startX;
             ball.y = startY;
             ball.active = true;
-
             const dx = endX - startX;
             const dy = endY - startY;
             const distance = Math.sqrt(dx*dx + dy*dy);
-            
             ball.vx = (dx / distance) * speed;
             ball.vy = (dy / distance) * speed;
 
             function step() {
                 ball.x += ball.vx;
                 ball.y += ball.vy;
-
-                // 計算是否抵達終點
                 const currDx = endX - ball.x;
                 const currDy = endY - ball.y;
                 const currDist = Math.sqrt(currDx*currDx + currDy*currDy);
-
                 drawField();
 
                 if (currDist < speed || (ball.vy > 0 && ball.y >= endY) || (ball.vy < 0 && ball.y <= endY)) {
@@ -281,7 +293,7 @@
             step();
         }
 
-        // --- 渲染玩家控制板 ---
+        // --- 核心操作面板渲染 ---
         function renderControlPanel() {
             const container = document.getElementById('interactive-area');
             container.innerHTML = "";
@@ -290,116 +302,158 @@
             if (gameState.isTop) {
                 document.getElementById('turn-title').innerText = "🔮 你是投手，請配球投進好球帶或引誘壞球：";
                 container.innerHTML = `
-                    <button class="pitch-btn pitch-strike" onclick="playerPitchAction('好球')">🔥 投好球</button>
-                    <button class="pitch-btn pitch-ball" onclick="playerPitchAction('壞球')">🟢 投壞球</button>
+                    <button class="action-btn pitch-strike" onclick="playerPitchAction('好球')">🔥 投好球</button>
+                    <button class="action-btn pitch-ball" onclick="playerPitchAction('壞球')">🟢 投壞球</button>
                 `;
             } else {
-                document.getElementById('turn-title').innerText = "🔥 輪到你打擊了！請挑選一張蓋牌進行揮棒：";
-                for (let i = 0; i < 3; i++) {
-                    container.innerHTML += `
-                        <div class="card-slot" id="slot${i}" onclick="playerBatAction(${i})">
-                            <div class="card-inner">
-                                <div class="card-back">⚾</div>
-                                <div class="card-front" id="front${i}">?</div>
-                            </div>
-                        </div>
-                    `;
-                }
+                document.getElementById('turn-title').innerText = "🔥 輪到你打擊了！看穿 AI 的配球，你要揮棒嗎？";
+                container.innerHTML = `
+                    <button class="action-btn bat-swing" onclick="playerBatAction('揮棒')">⚔️ 揮棒</button>
+                    <button class="action-btn bat-take" onclick="playerBatAction('不揮棒')">🛑 不揮棒</button>
+                `;
             }
         }
 
-        // --- 玩家防守投球動作處理 ---
+        // --- 出現「打擊命運翻牌圈」的專屬面板 ---
+        function triggerHitFlipingStage(isAICheck) {
+            isAICheckGlobal = isAICheck;
+            currentInPlayOptions = generateThreeCards();
+
+            document.getElementById('turn-title').innerText = "⚡ 球被打出去了！命運之門開啟，請點擊任一牌面翻牌決定結果：";
+            const container = document.getElementById('interactive-area');
+            container.innerHTML = "";
+
+            for (let i = 0; i < 3; i++) {
+                container.innerHTML += `
+                    <div class="result-card-slot" id="resSlot${i}" onclick="revealHitResultCard(${i})">
+                        <div class="card-inner">
+                            <div class="card-back">❔</div>
+                            <div class="card-front ${currentInPlayOptions[i].style}" id="resFront${i}">
+                                ${currentInPlayOptions[i].type}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // 翻開卡牌並驅動擊球動畫
+        function revealHitResultCard(selectedIndex) {
+            // 鎖定翻牌區防止重複點擊
+            document.getElementById('interactive-area').className = "cards-row disabled-zone";
+            const chosenObject = currentInPlayOptions[selectedIndex];
+
+            // 1. 全部翻牌展示
+            for (let i = 0; i < 3; i++) {
+                document.getElementById(`resSlot${i}`).className += " flipped";
+            }
+
+            // 2. 觸發擊球飛向指定位置的 Canvas 動畫
+            setTimeout(() => {
+                document.getElementById('game-log').innerText = `💥 翻牌揭曉！這次擊球的最終命運是：【${chosenObject.type}】！`;
+                
+                animateBall(loc.home.x, loc.home.y, chosenObject.target.x, chosenObject.target.y, 8, () => {
+                    processBattedBall(chosenObject.type, isAICheckGlobal);
+                    
+                    document.getElementById('interactive-area').className = "cards-row";
+                    if (gameState.outs < 3 && !gameState.gameOver && document.getElementById('next-half-btn').style.display !== "inline-block") {
+                        setTimeout(() => { renderControlPanel(); }, 1200);
+                    }
+                    checkInningStatus();
+                });
+            }, 600);
+        }
+
+        // --- 上半局：投手配球動作 ---
         function playerPitchAction(pitchType) {
-            document.getElementById('interactive-area').className = "cards-row disabled-zone"; // 動畫期間鎖定按鈕
+            document.getElementById('interactive-area').className = "cards-row disabled-zone";
             
             let aiSwing = false;
             const rand = Math.random();
             if (pitchType === "好球") { if (rand < 0.65) aiSwing = true; } 
             else { if (rand < 0.30) aiSwing = true; }
 
-            // 決定投球路徑終點 (壞球會故意偏出本壘)
             let targetX = loc.home.x;
             if (pitchType === "壞球") targetX = Math.random() < 0.5 ? loc.home.x - 30 : loc.home.x + 30;
 
-            // 1. 執行投球動畫
             animateBall(loc.pitcher.x, loc.pitcher.y, targetX, loc.home.y, 6, () => {
-                let logMsg = `你投出了一記【${pitchType}】。AI 選擇【${aiSwing ? '揮棒' : '沒有揮棒'}】→ `;
+                let logMsg = `你投出了【${pitchType}】。AI 選擇【${aiSwing ? '揮棒' : '沒有揮棒'}】→ `;
                 
                 if (pitchType === "好球" && !aiSwing) {
                     logMsg += "AI 站著不動，這是一記好球！";
                     document.getElementById('game-log').innerText = logMsg;
                     handleStrike();
+                    document.getElementById('interactive-area').className = "cards-row";
+                    checkInningStatus();
                 } else if (pitchType === "壞球" && !aiSwing) {
                     logMsg += "AI 精準選球，這是一記壞球。";
                     document.getElementById('game-log').innerText = logMsg;
                     handleBall();
+                    document.getElementById('interactive-area').className = "cards-row";
+                    checkInningStatus();
                 } else if (pitchType === "壞球" && aiSwing) {
-                    logMsg += "🎯 成功引誘！AI 揮擊壞球落空，記一好球！";
+                    logMsg += "🎯 成功引誘！AI 追打壞球落空，記一好球！";
                     document.getElementById('game-log').innerText = logMsg;
                     handleStrike();
+                    document.getElementById('interactive-area').className = "cards-row";
+                    checkInningStatus();
                 } else if (pitchType === "好球" && aiSwing) {
-                    // 揮到好球：觸發打擊彈飛動畫
-                    const hit = getRandomBattedBallResult();
-                    logMsg += `AI 強力出棒！球被擊飛了：【${hit.type}】`;
+                    // 電腦揮到好球，交給玩家翻牌決定防守/打擊結果！
+                    logMsg += "球被打到了！命運卡牌已準備就緒！";
                     document.getElementById('game-log').innerText = logMsg;
-
-                    animateBall(loc.home.x, loc.home.y, hit.target.x, hit.target.y, 7, () => {
-                        processBattedBall(hit.type, true);
-                        document.getElementById('interactive-area').className = "cards-row";
-                    });
-                    return; // 避開外層的解鎖
+                    document.getElementById('interactive-area').className = "cards-row";
+                    triggerHitFlipingStage(true); // 進入翻牌階段
                 }
-                document.getElementById('interactive-area').className = "cards-row";
-                checkInningStatus();
             });
         }
 
-        // --- 玩家進攻打擊動作處理 ---
-        function playerBatAction(selectedIndex) {
+        // --- 下半局：打者揮擊決斷動作 ---
+        function playerBatAction(playerDecision) {
             document.getElementById('interactive-area').className = "cards-row disabled-zone";
             let aiPitch = getRandomAIInboundResult();
+            let targetX = aiPitch === "好球" ? loc.home.x : (Math.random() < 0.5 ? loc.home.x - 30 : loc.home.x + 30);
 
-            // 翻牌特效
-            for (let i = 0; i < 3; i++) {
-                const front = document.getElementById(`front${i}`);
-                front.innerText = i === selectedIndex ? (aiPitch === "好球" ? "🔥 好球" : "🟢 壞球") : "❓";
-                document.getElementById(`slot${i}`).className += " flipped disabled";
-            }
-
-            let targetX = aiPitch === "好球" ? loc.home.x : loc.home.x + 30;
-
-            // 1. 執行投球飛向本壘起動畫
             animateBall(loc.pitcher.x, loc.pitcher.y, targetX, loc.home.y, 6, () => {
-                let logMsg = `你起腳大力揮棒！AI 投出的是【${aiPitch}】→ `;
+                let logMsg = `你選擇【${playerDecision}】，AI 投出的是【${aiPitch}】→ `;
 
-                if (aiPitch === "壞球") {
-                    logMsg += "糟糕！你被引誘追打了壞球，揮棒落空！";
-                    document.getElementById('game-log').innerText = logMsg;
-                    handleStrike();
-                    unlockBattingNextBall();
+                if (playerDecision === "不揮棒") {
+                    if (aiPitch === "好球") {
+                        logMsg += "你站著沒動，眼睜睜看球進帶，一好球！";
+                        document.getElementById('game-log').innerText = logMsg;
+                        handleStrike();
+                    } else {
+                        logMsg += "靈活選球！精準放過壞球，一壞球。";
+                        document.getElementById('game-log').innerText = logMsg;
+                        handleBall();
+                    }
+                    document.getElementById('interactive-area').className = "cards-row";
+                    if (gameState.outs < 3 && !gameState.gameOver && document.getElementById('next-half-btn').style.display !== "inline-block") {
+                        setTimeout(() => { renderControlPanel(); }, 1200);
+                    }
+                    checkInningStatus();
                 } else {
-                    const hit = getRandomBattedBallResult();
-                    logMsg += `正中紅心！球被你狠狠敲到：【${hit.type}】`;
-                    document.getElementById('game-log').innerText = logMsg;
-
-                    // 2. 執行擊球噴射動畫
-                    animateBall(loc.home.x, loc.home.y, hit.target.x, hit.target.y, 8, () => {
-                        processBattedBall(hit.type, false);
-                        unlockBattingNextBall();
-                    });
+                    // 玩家選擇揮棒
+                    if (aiPitch === "壞球") {
+                        logMsg += "慘了！你被外角壞球釣到，大空棒一好球！";
+                        document.getElementById('game-log').innerText = logMsg;
+                        handleStrike();
+                        document.getElementById('interactive-area').className = "cards-row";
+                        if (gameState.outs < 3 && !gameState.gameOver && document.getElementById('next-half-btn').style.display !== "inline-block") {
+                            setTimeout(() => { renderControlPanel(); }, 1200);
+                        }
+                        checkInningStatus();
+                    } else {
+                        // 成功咬中好球！觸發玩家翻牌決斷
+                        logMsg += "確實擊中球！快翻牌決定這次的命運！";
+                        document.getElementById('game-log').innerText = logMsg;
+                        document.getElementById('interactive-area').className = "cards-row";
+                        triggerHitFlipingStage(false); // 進入翻牌階段
+                    }
                 }
             });
         }
 
-        function unlockBattingNextBall() {
-            document.getElementById('interactive-area').className = "cards-row";
-            if (gameState.outs < 3 && !gameState.gameOver && document.getElementById('next-half-btn').style.display !== "inline-block") {
-                setTimeout(() => { renderControlPanel(); }, 1200);
-            }
-            checkInningStatus();
-        }
-
-        // --- 規則細節累計運算 ---
+        // --- 棒球規則計數引擎 ---
         function handleStrike() {
             gameState.strikes++;
             if (gameState.strikes >= 3) {
@@ -444,7 +498,7 @@
                 if (gameState.bases[0] && gameState.outs < 3) {
                     gameState.outs++;
                     gameState.bases[0] = false;
-                    document.getElementById('game-log').innerText += " (⚡ 防守方默契配合，漂亮雙殺！)";
+                    document.getElementById('game-log').innerText += " (⚡ 守備神合群，發動雙殺！)";
                 }
                 gameState.balls = 0; gameState.strikes = 0;
             } else if (result === "全壘打") {
@@ -491,18 +545,50 @@
             if (gameState.isTop) {
                 gameState.isTop = false;
                 gameState.scoreHome[gameState.inning-1] = 0;
-                document.getElementById('game-log').innerText = `第 ${gameState.inning} 局下半，你已戴上頭盔站上打擊區！`;
+                document.getElementById('game-log').innerText = `第 ${gameState.inning} 局下半，戴上打擊頭盔，看清 AI 的球路！`;
             } else {
                 if (gameState.inning >= 9) { endGame(); return; } 
                 else {
                     gameState.inning++;
                     gameState.isTop = true;
                     gameState.scoreAway[gameState.inning-1] = 0;
-                    document.getElementById('game-log').innerText = `進入第 ${gameState.inning} 局上半！換你防守控球。`;
+                    document.getElementById('game-log').innerText = `進入第 ${gameState.inning} 局上半！站上投手丘全力防守。`;
                 }
             }
             renderControlPanel();
             updateUI();
+        }
+
+        function updateUI() {
+            for(let i=1; i<=3; i++) document.getElementById(`b${i}`).className = i <= gameState.balls ? 'dot ball' : 'dot';
+            for(let i=1; i<=2; i++) document.getElementById(`s${i}`).className = i <= gameState.strikes ? 'dot strike' : 'dot';
+            for(let i=1; i<=2; i++) document.getElementById(`o${i}`).className = i <= gameState.outs ? 'dot out' : 'dot';
+
+            document.getElementById('base1').className = gameState.bases[0] ? 'base occupied' : 'base';
+            document.getElementById('base2').className = gameState.bases[1] ? 'base occupied' : 'base';
+            document.getElementById('base3').className = gameState.bases[2] ? 'base occupied' : 'base';
+
+            const halfText = gameState.isTop ? "上半 (玩家防守投球)" : "下半 (玩家進攻打擊)";
+            document.getElementById('game-status-text').innerText = `第 ${gameState.inning} 局 ${halfText} • ${gameState.outs} 出局`;
+            document.getElementById('field-batter-text').innerText = gameState.isTop ? "AI 打擊中" : "玩家 打擊中";
+
+            let totalAway = 0, totalHome = 0;
+            for(let i=1; i<=9; i++) {
+                const aVal = gameState.scoreAway[i-1];
+                document.getElementById(`a${i}`).innerText = aVal === null ? '-' : aVal;
+                if(aVal !== null) totalAway += aVal;
+                
+                const hVal = gameState.scoreHome[i-1];
+                document.getElementById(`h${i}`).innerText = hVal === null ? '-' : hVal;
+                if(hVal !== null) totalHome += hVal;
+
+                document.getElementById(i === 1 ? 'i1' : `th-i2`).parentElement.children[i].className = (i === gameState.inning && !gameState.gameOver) ? 'active-inning' : '';
+            }
+            
+            document.getElementById('away-R').innerText = totalAway;
+            document.getElementById('home-R').innerText = totalHome;
+            document.getElementById('away-H').innerText = gameState.hitsAway;
+            document.getElementById('home-H').innerText = gameState.hitsHome;
         }
 
         function endGame() {
@@ -510,14 +596,12 @@
             updateUI();
             let totalAway = gameState.scoreAway.reduce((a, b) => (a||0) + (b||0), 0);
             let totalHome = gameState.scoreHome.reduce((a, b) => (a||0) + (b||0), 0);
-            
-            let finalMsg = totalHome > totalAway ? `🏁 終場結束！玩家以 ${totalHome}-${totalAway} 獲勝！🏆` : (totalAway > totalHome ? `🏁 終場結束！AI 以 ${totalAway}-${totalHome} 獲勝。😭` : `🏁 延長戰平手 (${totalHome}-${totalAway})！🤝`);
+            let finalMsg = totalHome > totalAway ? `🏁 終場結束！玩家以 ${totalHome}-${totalAway} 贏得胜利！🏆` : (totalAway > totalHome ? `🏁 終場結束！AI 以 ${totalAway}-${totalHome} 險勝。😭` : `🏁 延長戰平手 (${totalHome}-${totalAway})！🤝`);
             document.getElementById('game-log').innerText = finalMsg;
             document.getElementById('turn-title').innerText = "🏁 比賽結束";
             document.getElementById('interactive-area').innerHTML = "";
         }
 
-        // 初始化
         function initGame() {
             gameState.scoreAway[0] = 0;
             drawField();
