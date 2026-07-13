@@ -231,37 +231,40 @@
 function drawField() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // 定義基礎中心位置 (確保球場位於畫布中央)
+    // 設定全域偏移，讓球場往畫布中間靠攏
+    // 假設畫布寬 360，我們把本壘稍微向上移，騰出更多空間給外野
     const centerX = canvas.width / 2;
     const homeY = 240; 
     
-    // 1. 繪製底部草皮背景 (底色)
+    // 1. 繪製草皮背景
     ctx.fillStyle = "#27ae60";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // 2. 繪製扇形球場區 (弧線半徑 210，確保不切邊)
+    // 繪製扇形草皮 (將半徑從 265 縮小到 220，確保不會觸碰上下左右邊界)
+    const radius = 220; 
     ctx.beginPath();
     ctx.moveTo(centerX, homeY);
-    ctx.arc(centerX, homeY, 210, Math.PI * 1.2, Math.PI * 1.8, false);
+    ctx.arc(centerX, homeY, radius, Math.PI * 1.2, Math.PI * 1.8, false);
     ctx.closePath();
-    ctx.fillStyle = "#2ecc71"; // 稍淺的綠色區分草皮
+    ctx.fillStyle = "#27ae60";
     ctx.fill();
     ctx.strokeStyle = "#2c3e50";
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 6;
     ctx.stroke();
 
-    // 3. 繪製界內白線 (短一點，確保在畫布內)
+    // 2. 左右邊線 (長度縮短，確保兩端完全在畫布內)
     ctx.beginPath();
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 3;
+    const lineLen = 200; 
     ctx.moveTo(centerX, homeY);
-    ctx.lineTo(centerX + 190 * Math.cos(Math.PI * 1.2), homeY + 190 * Math.sin(Math.PI * 1.2));
+    ctx.lineTo(centerX + lineLen * Math.cos(Math.PI * 1.2), homeY + lineLen * Math.sin(Math.PI * 1.2));
     ctx.moveTo(centerX, homeY);
-    ctx.lineTo(centerX + 190 * Math.cos(Math.PI * 1.8), homeY + 190 * Math.sin(Math.PI * 1.8));
+    ctx.lineTo(centerX + lineLen * Math.cos(Math.PI * 1.8), homeY + lineLen * Math.sin(Math.PI * 1.8));
     ctx.stroke();
 
-    // 4. 繪製內野紅土 (確保它疊在線條之上)
-    const size = 55;
+    // 3. 內野紅土 (使用固定的相對座標)
+    const size = 60; // 內野大小
     ctx.beginPath();
     ctx.moveTo(centerX, homeY);
     ctx.lineTo(centerX - size, homeY - size);
@@ -271,35 +274,29 @@ function drawField() {
     ctx.fillStyle = "#d35400";
     ctx.fill();
 
-    // 5. 繪製壘包 (必須在最後繪製，確保不會被任何圖層蓋住)
+    // 4. 壘包 (根據 centerX, homeY 動態計算)
     const drawBase = (x, y, occupied) => {
         ctx.fillStyle = occupied ? "#ff3f34" : "#ffffff";
-        ctx.strokeStyle = "#000";
-        ctx.lineWidth = 1;
         ctx.fillRect(x - 6, y - 6, 12, 12);
-        ctx.strokeRect(x - 6, y - 6, 12, 12);
     };
-    // 使用新的座標系統對應你的 loc 位置
-    drawBase(centerX + size, homeY - size, gameState.bases[0]); // 一壘
-    drawBase(centerX, homeY - size * 2, gameState.bases[1]);    // 二壘
-    drawBase(centerX - size, homeY - size, gameState.bases[2]); // 三壘
+    drawBase(centerX + size, homeY - size, gameState.bases[0]);
+    drawBase(centerX, homeY - size * 2, gameState.bases[1]);
+    drawBase(centerX - size, homeY - size, gameState.bases[2]);
 
-    // 6. 本壘與投手丘
+    // 5. 本壘與投手丘
     ctx.fillStyle = "#fff";
     ctx.fillRect(centerX - 6, homeY - 6, 12, 12);
     ctx.beginPath();
-    ctx.arc(centerX, homeY - 50, 5, 0, Math.PI * 2);
+    ctx.arc(centerX, homeY - 60, 6, 0, Math.PI * 2);
     ctx.fillStyle = "#d35400";
     ctx.fill();
 
-    // 7. 球體 (確保在最上層)
+    // 6. 球的動畫 (保持不變)
     if (ball.active) {
         ctx.beginPath();
         ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2);
         ctx.fillStyle = "#ffffff";
         ctx.fill();
-        ctx.strokeStyle = "#000";
-        ctx.lineWidth = 1;
         ctx.stroke();
     }
 }
