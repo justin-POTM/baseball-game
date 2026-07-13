@@ -231,69 +231,72 @@
 function drawField() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // 1. 繪製背景與草皮
+    // 設定全域偏移，讓球場往畫布中間靠攏
+    // 假設畫布寬 360，我們把本壘稍微向上移，騰出更多空間給外野
+    const centerX = canvas.width / 2;
+    const homeY = 240; 
+    
+    // 1. 繪製草皮背景
     ctx.fillStyle = "#27ae60";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // 將球場整體位置微調（向下移），避免邊緣被裁切，但不影響整體縮放
-    const offsetX = 0;
-    const offsetY = 10; 
-    
+    // 繪製扇形草皮 (將半徑從 265 縮小到 220，確保不會觸碰上下左右邊界)
+    const radius = 220; 
     ctx.beginPath();
-    ctx.moveTo(loc.home.x + offsetX, loc.home.y + offsetY);
-    ctx.arc(loc.home.x + offsetX, loc.home.y + offsetY, 255, Math.PI * 1.25, Math.PI * 1.75, false);
+    ctx.moveTo(centerX, homeY);
+    ctx.arc(centerX, homeY, radius, Math.PI * 1.2, Math.PI * 1.8, false);
     ctx.closePath();
     ctx.fillStyle = "#27ae60";
     ctx.fill();
     ctx.strokeStyle = "#2c3e50";
-    ctx.lineWidth = 8;
+    ctx.lineWidth = 6;
     ctx.stroke();
 
-    // 2. 繪製左右兩側界內線 (限制長度，確保在畫布內)
+    // 2. 左右邊線 (長度縮短，確保兩端完全在畫布內)
     ctx.beginPath();
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 3;
-    const lineLen = 220;
-    ctx.moveTo(loc.home.x + offsetX, loc.home.y + offsetY);
-    ctx.lineTo(loc.home.x + offsetX + lineLen * Math.cos(Math.PI * 1.25), loc.home.y + offsetY + lineLen * Math.sin(Math.PI * 1.25));
-    ctx.moveTo(loc.home.x + offsetX, loc.home.y + offsetY);
-    ctx.lineTo(loc.home.x + offsetX + lineLen * Math.cos(Math.PI * 1.75), loc.home.y + offsetY + lineLen * Math.sin(Math.PI * 1.75));
+    const lineLen = 200; 
+    ctx.moveTo(centerX, homeY);
+    ctx.lineTo(centerX + lineLen * Math.cos(Math.PI * 1.2), homeY + lineLen * Math.sin(Math.PI * 1.2));
+    ctx.moveTo(centerX, homeY);
+    ctx.lineTo(centerX + lineLen * Math.cos(Math.PI * 1.8), homeY + lineLen * Math.sin(Math.PI * 1.8));
     ctx.stroke();
 
-    // 3. 內野
+    // 3. 內野紅土 (使用固定的相對座標)
+    const size = 60; // 內野大小
     ctx.beginPath();
-    ctx.moveTo(loc.home.x + offsetX, loc.home.y + offsetY);
-    ctx.lineTo(loc.base3.x + offsetX, loc.base3.y + offsetY);
-    ctx.lineTo(loc.base2.x + offsetX, loc.base2.y + offsetY);
-    ctx.lineTo(loc.base1.x + offsetX, loc.base1.y + offsetY);
+    ctx.moveTo(centerX, homeY);
+    ctx.lineTo(centerX - size, homeY - size);
+    ctx.lineTo(centerX, homeY - size * 2);
+    ctx.lineTo(centerX + size, homeY - size);
     ctx.closePath();
     ctx.fillStyle = "#d35400";
     ctx.fill();
 
-    // 4. 壘包
-    const drawBase = (pos, occupied) => {
+    // 4. 壘包 (根據 centerX, homeY 動態計算)
+    const drawBase = (x, y, occupied) => {
         ctx.fillStyle = occupied ? "#ff3f34" : "#ffffff";
-        ctx.fillRect(pos.x + offsetX - 6, pos.y + offsetY - 6, 12, 12);
+        ctx.fillRect(x - 6, y - 6, 12, 12);
     };
-    drawBase(loc.base1, gameState.bases[0]);
-    drawBase(loc.base2, gameState.bases[1]);
-    drawBase(loc.base3, gameState.bases[2]);
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(loc.home.x + offsetX - 6, loc.home.y + offsetY - 6, 12, 12);
+    drawBase(centerX + size, homeY - size, gameState.bases[0]);
+    drawBase(centerX, homeY - size * 2, gameState.bases[1]);
+    drawBase(centerX - size, homeY - size, gameState.bases[2]);
 
-    // 5. 投手丘
+    // 5. 本壘與投手丘
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(centerX - 6, homeY - 6, 12, 12);
     ctx.beginPath();
-    ctx.arc(loc.pitcher.x + offsetX, loc.pitcher.y + offsetY, 6, 0, Math.PI * 2);
+    ctx.arc(centerX, homeY - 60, 6, 0, Math.PI * 2);
     ctx.fillStyle = "#d35400";
     ctx.fill();
 
-    // 6. 重要：恢復球的繪製（這裡會根據你的 ball 物件位置繪圖）
+    // 6. 球的動畫 (保持不變)
     if (ball.active) {
         ctx.beginPath();
-        ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2); // 使用真實的 ball.x/y
+        ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2);
         ctx.fillStyle = "#ffffff";
         ctx.fill();
-        ctx.strokeStyle = "#000";
         ctx.stroke();
     }
 }
