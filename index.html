@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚾ MLB 實況策略模擬：真正流暢版 ⚾</title>
+    <title>⚾ MLB 實況策略模擬：卡牌不重複流暢版 ⚾</title>
     <style>
         body { background-color: #1a252f; color: #fff; font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; margin: 0; padding: 20px; }
         .game-wrapper { max-width: 850px; margin: 0 auto; background: #2c3e50; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
@@ -66,7 +66,7 @@
 <body>
 
     <div class="game-wrapper">
-        <h1>⚾ MLB 實況策略模擬：真正流暢版 ⚾</h1>
+        <h1>⚾ MLB 實況策略模擬：卡牌不重複流暢版 ⚾</h1>
 
         <table class="scoreboard">
             <thead>
@@ -152,6 +152,7 @@
         let currentInPlayOptions = [];
         let animId;
 
+        // 卡牌結果池
         const dataPool = [
             { type: "界外球", target: { x: 40, y: 180 }, style: "hit-foul" },
             { type: "一般出局", target: { x: 270, y: 120 }, style: "hit-out" },
@@ -162,6 +163,7 @@
             { type: "全壘打", target: { x: 180, y: -20 }, style: "hit-safe" }
         ];
 
+        // AI 使用隨機採樣
         function sampleBattedBall() {
             const rand = Math.random() * 100;
             if (rand < 42.0) return dataPool[0];
@@ -173,8 +175,16 @@
             return dataPool[6];
         }
 
-        function generateThreeCards() {
-            return [sampleBattedBall(), sampleBattedBall(), sampleBattedBall()];
+        // 🔥【關鍵修復】生成三張完全不重複的打擊卡牌（洗牌演算法）
+        function generateThreeUniqueCards() {
+            let poolCopy = [...dataPool];
+            // Fisher-Yates 洗牌
+            for (let i = poolCopy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [poolCopy[i], poolCopy[j]] = [poolCopy[j], poolCopy[i]];
+            }
+            // 嚴格取出前 3 張不同的卡牌
+            return [poolCopy[0], poolCopy[1], poolCopy[2]];
         }
 
         function getRandomAIInboundResult() {
@@ -309,9 +319,10 @@
         }
 
         function triggerPlayerHitFlipingStage() {
-            currentInPlayOptions = generateThreeCards();
+            // 使用新版不重複卡牌生成函式
+            currentInPlayOptions = generateThreeUniqueCards();
 
-            document.getElementById('turn-title').innerText = "⚡ 你擊中球了！請點擊任一牌面翻牌決定結果：";
+            document.getElementById('turn-title').innerText = "⚡ 你擊中球了！請點擊任一牌面翻牌決定結果（三張結果皆不同）：";
             const container = document.getElementById('interactive-area');
             container.innerHTML = "";
 
@@ -347,10 +358,9 @@
             }, 600);
         }
 
-        // 🔥【關鍵修復】全面解鎖控制區，強制移除 disabled-zone 樣式
         function unlockActionZone() {
             const container = document.getElementById('interactive-area');
-            container.className = "cards-row"; // 移除 disabled-zone，還原正常狀態！
+            container.className = "cards-row"; 
             
             if (gameState.outs < 3 && !gameState.gameOver) {
                 renderControlPanel();
@@ -377,7 +387,7 @@
                     logMsg += "AI 站著不動，這是一記好球！";
                     document.getElementById('game-log').innerText = logMsg;
                     handleStrike();
-                    unlockActionZone(); // 這裏會正確解鎖，不再卡住！
+                    unlockActionZone();
                 } else if (pitchType === "壞球" && !aiSwing) {
                     logMsg += "AI 精準選球，這是一記壞球。";
                     document.getElementById('game-log').innerText = logMsg;
@@ -430,7 +440,7 @@
                     } else {
                         logMsg += "確實擊中球！快翻牌決定這次的命運！";
                         document.getElementById('game-log').innerText = logMsg;
-                        document.getElementById('interactive-area').className = "cards-row"; // 解除限制讓玩家翻牌
+                        document.getElementById('interactive-area').className = "cards-row"; 
                         triggerPlayerHitFlipingStage();
                     }
                 }
