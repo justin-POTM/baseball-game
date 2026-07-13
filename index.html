@@ -130,21 +130,23 @@
     </div>
 
     <script>
-        // --- Canvas 與核心幾何配置（優化內外野黃金比例版） ---
+        // --- Canvas 與核心幾何配置（45度完美對稱 1/4 圓結構） ---
         const canvas = document.getElementById("fieldCanvas");
         const ctx = canvas.getContext("2d");
 
-        // 將本壘往下拉到 (180, 290)，騰出更多空間給內野
+        // 本壘設為中心原點 (180, 275)
         const loc = {
-            home:  { x: 180, y: 290 },
-            // 放大內野鑽石幾何（邊長擴大，讓一三壘在視覺上更開闊）
-            base1: { x: 235, y: 235 }, 
-            base2: { x: 180, y: 180 }, 
-            base3: { x: 125, y: 235 }  
+            home:  { x: 180, y: 275 },
+            pitcher:{ x: 180, y: 195 },
+            // 嚴格依照 45 度角計算的內野鑽石幾何 (邊長約 56 像素)
+            base1: { x: 220, y: 235 }, 
+            base2: { x: 180, y: 195 }, // 二壘位置與投手丘重疊或略往後，此處維持數值穩定
+            base3: { x: 140, y: 235 }  
         };
         
-        // 投手丘置於本壘與二壘之間偏後位置
-        loc.pitcher = { x: 180, y: 225 };
+        // 為了讓內野視覺比例更完美，微調二壘與投手丘深度
+        loc.base2 = { x: 180, y: 195 };
+        loc.pitcher = { x: 180, y: 230 };
 
         let ball = { x: loc.pitcher.x, y: loc.pitcher.y, vx: 0, vy: 0, active: false, radius: 5 };
         let gameState = {};
@@ -169,17 +171,17 @@
         let forcedTargetIndex = 0; 
         let animId;
 
-        // 打擊軌跡落點優化（配合放大的內野）
+        // 打擊軌跡落點更新
         const cardTypes = {
             foul: { type: "界外球", target: { x: 40, y: 220 }, style: "hit-foul" },
-            gOut: { type: "滾地球出局", target: { x: 210, y: 220 }, style: "hit-out" },
-            fOut: { type: "高飛球接殺", target: { x: 130, y: 110 }, style: "hit-out" },
-            lOut: { type: "平飛球接殺", target: { x: 230, y: 160 }, style: "hit-out" },
-            dPlay: { type: "雙殺打", target: { x: 180, y: 200 }, style: "hit-out" },
-            h1: { type: "一壘安打", target: { x: 250, y: 130 }, style: "hit-safe" },
-            h2: { type: "二壘安打", target: { x: 210, y: 70 }, style: "hit-safe" },
-            h3: { type: "三壘安打", target: { x: 150, y: 70 }, style: "hit-safe" }, 
-            hr: { type: "全壘打", target: { x: 180, y: 20 }, style: "hit-safe" }
+            gOut: { type: "滾地球出局", target: { x: 200, y: 220 }, style: "hit-out" },
+            fOut: { type: "高飛球接殺", target: { x: 130, y: 140 }, style: "hit-out" },
+            lOut: { type: "平飛球接殺", target: { x: 220, y: 180 }, style: "hit-out" },
+            dPlay: { type: "雙殺打", target: { x: 180, y: 210 }, style: "hit-out" },
+            h1: { type: "一壘安打", target: { x: 240, y: 160 }, style: "hit-safe" },
+            h2: { type: "二壘安打", target: { x: 210, y: 100 }, style: "hit-safe" },
+            h3: { type: "三壘安打", target: { x: 150, y: 100 }, style: "hit-safe" }, 
+            hr: { type: "全壘打", target: { x: 180, y: 30 }, style: "hit-safe" }
         };
 
         function getRandomMLBResult() {
@@ -228,78 +230,111 @@
             return Math.random() < 0.46 ? "好球" : "壞球";
         }
 
-function drawField() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // 設定全域偏移，讓球場往畫布中間靠攏
-    // 假設畫布寬 360，我們把本壘稍微向上移，騰出更多空間給外野
-    const centerX = canvas.width / 2;
-    const homeY = 240; 
-    
-    // 1. 繪製草皮背景
-    ctx.fillStyle = "#27ae60";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // 繪製扇形草皮 (將半徑從 265 縮小到 220，確保不會觸碰上下左右邊界)
-    const radius = 220; 
-    ctx.beginPath();
-    ctx.moveTo(centerX, homeY);
-    ctx.arc(centerX, homeY, radius, Math.PI * 1.2, Math.PI * 1.8, false);
-    ctx.closePath();
-    ctx.fillStyle = "#27ae60";
-    ctx.fill();
-    ctx.strokeStyle = "#2c3e50";
-    ctx.lineWidth = 6;
-    ctx.stroke();
+        // --- Canvas 繪圖渲染引擎（1/4完美扇形 + 邊線精準切過一三壘） ---
+        function drawField() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 預設全界外區背景（深綠色）
+            ctx.fillStyle = "#16a085";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const radius = 250; // 全壘打牆半徑
+            
+            // 1. 繪製 1/4 圓的界內球場（淺綠色草皮）
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(loc.home.x, loc.home.y);
+            // HTML5 Arc 弧度定義：正右方為 0，順時針計算。
+            // 完美 1/4 圓對稱向上延伸，左邊線為 225度(1.25*PI)，右邊線為 315度(1.75*PI)
+            ctx.arc(loc.home.x, loc.home.y, radius, Math.PI * 1.25, Math.PI * 1.75, false);
+            ctx.closePath();
+            ctx.fillStyle = "#27ae60"; 
+            ctx.fill();
+            
+            // 全壘打牆圍欄
+            ctx.strokeStyle = "#2c3e50";
+            ctx.lineWidth = 5;
+            ctx.stroke();
+            ctx.restore();
 
-    // 2. 左右邊線 (長度縮短，確保兩端完全在畫布內)
-    ctx.beginPath();
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 3;
-    const lineLen = 200; 
-    ctx.moveTo(centerX, homeY);
-    ctx.lineTo(centerX + lineLen * Math.cos(Math.PI * 1.2), homeY + lineLen * Math.sin(Math.PI * 1.2));
-    ctx.moveTo(centerX, homeY);
-    ctx.lineTo(centerX + lineLen * Math.cos(Math.PI * 1.8), homeY + lineLen * Math.sin(Math.PI * 1.8));
-    ctx.stroke();
+            // 2. 繪製左右兩側白邊線（從本壘出發，精準切過一三壘包外側並延伸至全壘打牆）
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "#ffffff";
+            
+            // 左邊線 (三壘線)
+            const leftEndX = loc.home.x + radius * Math.cos(Math.PI * 1.25);
+            const leftEndY = loc.home.y + radius * Math.sin(Math.PI * 1.25);
+            ctx.moveTo(loc.home.x, loc.home.y);
+            ctx.lineTo(leftEndX, leftEndY);
+            
+            // 右邊線 (一壘線)
+            const rightEndX = loc.home.x + radius * Math.cos(Math.PI * 1.75);
+            const rightEndY = loc.home.y + radius * Math.sin(Math.PI * 1.75);
+            ctx.moveTo(loc.home.x, loc.home.y);
+            ctx.lineTo(rightEndX, rightEndY);
+            ctx.stroke();
 
-    // 3. 內野紅土 (使用固定的相對座標)
-    const size = 60; // 內野大小
-    ctx.beginPath();
-    ctx.moveTo(centerX, homeY);
-    ctx.lineTo(centerX - size, homeY - size);
-    ctx.lineTo(centerX, homeY - size * 2);
-    ctx.lineTo(centerX + size, homeY - size);
-    ctx.closePath();
-    ctx.fillStyle = "#d35400";
-    ctx.fill();
+            // 3. 內野扇形紅土區
+            ctx.beginPath();
+            ctx.moveTo(loc.home.x, loc.home.y);
+            ctx.lineTo(loc.base3.x, loc.base3.y);
+            ctx.lineTo(loc.base2.x, loc.base2.y);
+            ctx.lineTo(loc.base1.x, loc.base1.y);
+            ctx.closePath();
+            ctx.fillStyle = "#cd7f32";
+            ctx.fill();
+            ctx.strokeStyle = "rgba(255,255,255,0.4)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
 
-    // 4. 壘包 (根據 centerX, homeY 動態計算)
-    const drawBase = (x, y, occupied) => {
-        ctx.fillStyle = occupied ? "#ff3f34" : "#ffffff";
-        ctx.fillRect(x - 6, y - 6, 12, 12);
-    };
-    drawBase(centerX + size, homeY - size, gameState.bases[0]);
-    drawBase(centerX, homeY - size * 2, gameState.bases[1]);
-    drawBase(centerX - size, homeY - size, gameState.bases[2]);
+            // 4. 繪製壘包（置於 45 度幾何線上）
+            const drawBaseSquare = (pos, occupied) => {
+                ctx.save();
+                ctx.translate(pos.x, pos.y);
+                ctx.rotate(45 * Math.PI / 180);
+                ctx.fillStyle = occupied ? "#ff3f34" : "#ffffff";
+                ctx.fillRect(-6, -6, 12, 12);
+                ctx.strokeStyle = "#111";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(-6, -6, 12, 12);
+                ctx.restore();
+            };
+            drawBaseSquare(loc.base1, gameState.bases[0]);
+            drawBaseSquare(loc.base2, gameState.bases[1]);
+            drawBaseSquare(loc.base3, gameState.bases[2]);
+            
+            // 5. 本壘板
+            ctx.fillStyle = "#fff";
+            ctx.beginPath();
+            ctx.moveTo(loc.home.x, loc.home.y - 5);
+            ctx.lineTo(loc.home.x + 6, loc.home.y);
+            ctx.lineTo(loc.home.x + 6, loc.home.y + 6);
+            ctx.lineTo(loc.home.x - 6, loc.home.y + 6);
+            ctx.lineTo(loc.home.x - 6, loc.home.y);
+            ctx.closePath();
+            ctx.fill();
 
-    // 5. 本壘與投手丘
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(centerX - 6, homeY - 6, 12, 12);
-    ctx.beginPath();
-    ctx.arc(centerX, homeY - 60, 6, 0, Math.PI * 2);
-    ctx.fillStyle = "#d35400";
-    ctx.fill();
+            // 6. 投手丘
+            ctx.beginPath();
+            ctx.arc(loc.pitcher.x, loc.pitcher.y, 6, 0, Math.PI*2);
+            ctx.fillStyle = "#cd7f32";
+            ctx.fill();
+            ctx.strokeStyle = "#fff";
+            ctx.stroke();
 
-    // 6. 球的動畫 (保持不變)
-    if (ball.active) {
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2);
-        ctx.fillStyle = "#ffffff";
-        ctx.fill();
-        ctx.stroke();
-    }
-}
+            // 7. 飛球動態渲染
+            if (ball.active) {
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
+                ctx.fillStyle = "#ffffff";
+                ctx.fill();
+                ctx.strokeStyle = "#000";
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+
         function animateBall(startX, startY, endX, endY, speed, callback) {
             ball.x = startX;
             ball.y = startY;
