@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚾ 卡牌棒球 ⚾</title>
+    <title>⚾ BaseBallBattle ⚾</title>
     <style>
         body { background-color: #1a252f; color: #fff; font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; margin: 0; padding: 20px; }
         .game-wrapper { max-width: 850px; margin: 0 auto; background: #2c3e50; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
@@ -68,7 +68,7 @@
 <body>
 
     <div class="game-wrapper">
-        <h1>⚾ 卡牌棒球 ⚾</h1>
+        <h1>⚾ BaseBallBattle ⚾</h1>
 
         <table class="scoreboard">
             <thead>
@@ -146,7 +146,6 @@
 
         let gameState = {};
 
-        // 初始化/重設全域狀態
         function initGameStateObject() {
             gameState = {
                 inning: 1, isTop: true,
@@ -160,7 +159,7 @@
                     home: { double: 0, triple: 0, hr: 0 }
                 }
             };
-            gameState.scoreAway[0] = 0; // 第一局上半初始為 0 分
+            gameState.scoreAway[0] = 0; 
         }
 
         let currentInPlayOptions = [];
@@ -225,27 +224,30 @@
             return Math.random() < 0.46 ? "好球" : "壞球";
         }
 
-        // --- Canvas 繪圖渲染引擎（標準對稱圓弧扇形） ---
+        // --- Canvas 繪圖渲染引擎（已修正為本壘為中心的完美平滑正圓弧） ---
         function drawField() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "#228b22";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
+            // 繪製完美流暢的外野扇形
             ctx.beginPath();
             ctx.moveTo(loc.home.x, loc.home.y);
-            ctx.lineTo(15, 95); 
+            ctx.lineTo(15, 95); // 左邊線端點
             
-            ctx.quadraticCurveTo(80, 5, 180, 30);   
-            ctx.quadraticCurveTo(280, 5, 345, 95);  
+            // 以本壘為圓心，半徑約 233.35 (sqrt(165^2 + 165^2))，畫出平滑的單一圓弧全壘打牆
+            ctx.arc(loc.home.x, loc.home.y, 233.35, Math.PI * 1.25, Math.PI * 1.75, false);
             
             ctx.lineTo(loc.home.x, loc.home.y);
             ctx.fillStyle = "#1e7232"; 
             ctx.fill();
             
+            // 全壘打牆外緣粗線條
             ctx.strokeStyle = "#2c3e50";
             ctx.lineWidth = 5;
             ctx.stroke();
 
+            // 左右兩側白邊線
             ctx.beginPath();
             ctx.moveTo(loc.home.x, loc.home.y);
             ctx.lineTo(15, 95);
@@ -255,6 +257,7 @@
             ctx.lineWidth = 2;
             ctx.stroke();
 
+            // 內野鑽石紅土區
             ctx.beginPath();
             ctx.moveTo(loc.home.x, loc.home.y);
             ctx.lineTo(loc.base1.x, loc.base1.y);
@@ -701,11 +704,9 @@
             document.getElementById('turn-title').innerText = "🏁 比賽結束";
             document.getElementById('interactive-area').innerHTML = "";
             
-            // 顯示「再來一場」按鈕
             document.getElementById('restart-game-btn').style.display = "inline-block";
         }
 
-        // 🔄 再來一場重設邏輯
         function resetWholeGame() {
             document.getElementById('restart-game-btn').style.display = "none";
             initGameStateObject();
