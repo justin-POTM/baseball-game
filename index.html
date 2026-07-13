@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚾ 實況棒球模擬 ⚾</title>
+    <title>⚾ MLB 實況策略模擬：大巨蛋不對稱外野版 ⚾</title>
     <style>
         body { background-color: #1a252f; color: #fff; font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; margin: 0; padding: 20px; }
         .game-wrapper { max-width: 850px; margin: 0 auto; background: #2c3e50; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
@@ -27,7 +27,7 @@
         .dot.out { background: #ff0000; box-shadow: 0 0 8px #ff0000; }
 
         /* 動畫球場 Canvas */
-        .stadium-container { flex: 1.3; min-width: 340px; background: #1e824c; border: 5px solid #111; border-radius: 10px; position: relative; padding: 0; box-sizing: border-box; overflow: hidden; height: 300px;}
+        .stadium-container { flex: 1.3; min-width: 340px; background: #16a085; border: 5px solid #111; border-radius: 10px; position: relative; padding: 0; box-sizing: border-box; overflow: hidden; height: 300px;}
         canvas { background-color: #27ae60; display: block; margin: 0 auto; }
 
         /* 操作面板區 */
@@ -66,7 +66,7 @@
 <body>
 
     <div class="game-wrapper">
-        <h1>⚾ MLB 實況策略模擬：完美跑壘版 ⚾</h1>
+        <h1>⚾ MLB 實況策略模擬：大巨蛋不對稱外野版 ⚾</h1>
 
         <table class="scoreboard">
             <thead>
@@ -144,11 +144,9 @@
         let gameState = {
             inning: 1, isTop: true,
             outs: 0, balls: 0, strikes: 0,
-            bases: [false, false, false],
+            bases: [false, false, false], // [一壘, 二壘, 三壘]
             scoreAway: Array(9).fill(null), scoreHome: Array(9).fill(null),
             hitsAway: 0, hitsHome: 0, gameOver: false,
-            
-            // 打數統計，計算真實打擊率
             abAway: 0, abHome: 0,
 
             stats: {
@@ -158,42 +156,41 @@
         };
 
         let currentInPlayOptions = [];
-        let forcedTargetIndex = 0; // 紀錄被後台注定的那張卡牌索引
+        let forcedTargetIndex = 0; 
         let animId;
 
+        // 不對稱落點調整（呼應大巨蛋深遠的左外野線條）
         const cardTypes = {
-            foul: { type: "界外球", target: { x: 40, y: 180 }, style: "hit-foul" },
-            gOut: { type: "滾地球出局", target: { x: 210, y: 190 }, style: "hit-out" },
-            fOut: { type: "飛球接殺", target: { x: 100, y: 90 }, style: "hit-out" },
-            lOut: { type: "平飛球接殺", target: { x: 240, y: 150 }, style: "hit-out" },
-            dPlay: { type: "雙殺打", target: { x: 160, y: 140 }, style: "hit-out" },
-            h1: { type: "一壘安打", target: { x: 290, y: 90 }, style: "hit-safe" },
-            h2: { type: "二壘安打", target: { x: 220, y: 40 }, style: "hit-safe" },
-            h3: { type: "三壘安打", target: { x: 60, y: 50 }, style: "hit-safe" },
-            hr: { type: "全壘打", target: { x: 180, y: -20 }, style: "hit-safe" }
+            foul: { type: "界外球", target: { x: 30, y: 190 }, style: "hit-foul" },
+            gOut: { type: "滾地球出局", target: { x: 220, y: 180 }, style: "hit-out" },
+            fOut: { type: "飛球接殺", target: { x: 90, y: 110 }, style: "hit-out" },
+            lOut: { type: "平飛球接殺", target: { x: 250, y: 140 }, style: "hit-out" },
+            dPlay: { type: "雙殺打", target: { x: 160, y: 150 }, style: "hit-out" },
+            h1: { type: "一壘安打", target: { x: 280, y: 110 }, style: "hit-safe" },
+            h2: { type: "二壘安打", target: { x: 240, y: 55 }, style: "hit-safe" },
+            h3: { type: "三壘安打", target: { x: 50, y: 70 }, style: "hit-safe" }, 
+            hr: { type: "全壘打", target: { x: 130, y: -10 }, style: "hit-safe" }
         };
 
-        // 🎯 大聯盟實況真實比例池
         function getRandomMLBResult() {
             const rand = Math.random() * 100;
-            if (rand < 32.0) return cardTypes.foul;   // 界外球 (32%)
-            if (rand < 48.0) return cardTypes.gOut;   // 滾地出局 (16%)
-            if (rand < 62.0) return cardTypes.fOut;   // 飛球接殺 (14%)
-            if (rand < 66.0) return cardTypes.lOut;   // 平飛接殺 (4%)
-            if (rand < 69.0) return cardTypes.dPlay;  // 雙殺打 (3%)
-            if (rand < 88.0) return cardTypes.h1;     // 一壘安打 (19%)
-            if (rand < 95.0) return cardTypes.h2;     // 二壘安打 (7%)
-            if (rand < 97.0) return cardTypes.h3;     // 三壘安打 (2%)
-            return cardTypes.hr;                      // 全壘打 (3%)
+            if (rand < 32.0) return cardTypes.foul;   
+            if (rand < 48.0) return cardTypes.gOut;   
+            if (rand < 62.0) return cardTypes.fOut;   
+            if (rand < 66.0) return cardTypes.lOut;   
+            if (rand < 69.0) return cardTypes.dPlay;  
+            if (rand < 88.0) return cardTypes.h1;     
+            if (rand < 95.0) return cardTypes.h2;     
+            if (rand < 97.0) return cardTypes.h3;     
+            return cardTypes.hr;                      
         }
 
-        // 🛠️ 期望值校正且防爆的卡牌配牌器
         function generateBalancedThreeCards() {
             const finalOutcome = getRandomMLBResult();
             let cardA = finalOutcome;
             let cardB, cardC;
 
-            const isOut = (c) => ["滾地球出局", "高飛球接殺", "平飛球接殺", "雙殺打"].includes(c.type);
+            const isOut = (c) => ["滾地球出局", "飛球接殺", "平飛球接殺", "雙殺打"].includes(c.type);
 
             if (isOut(cardA)) {
                 cardB = cardTypes.foul;
@@ -221,39 +218,61 @@
             return Math.random() < 0.46 ? "好球" : "壞球";
         }
 
-        // --- Canvas 繪圖渲染引擎 ---
+        // --- Canvas 繪圖渲染引擎（大巨蛋不對稱草皮風格） ---
         function drawField() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "#27ae60";
+            
+            // 室內人工草皮深綠色底色
+            ctx.fillStyle = "#1e6b45";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
+            // 繪製不對稱外野全壘打牆與扇形區域 (呼應台北大巨蛋左深右淺特徵)
             ctx.beginPath();
             ctx.moveTo(loc.home.x, loc.home.y);
-            ctx.lineTo(10, 80);
-            ctx.arc(loc.home.x, loc.home.y, 240, Math.PI * 1.30, Math.PI * 1.70);
+            ctx.lineTo(5, 100); // 左線邊界
+            
+            // 使用二次貝茲曲線勾勒出左半邊深、右半邊順滑的不對稱全壘打牆
+            ctx.quadraticCurveTo(80, 5, 180, 35);   // 左外野到中外野
+            ctx.quadraticCurveTo(280, 55, 355, 110); // 中外野到右外野
+            
             ctx.lineTo(loc.home.x, loc.home.y);
-            ctx.fillStyle = "#1e824c";
+            ctx.fillStyle = "#1b5e3a"; 
             ctx.fill();
-            ctx.strokeStyle = "#fff";
-            ctx.lineWidth = 2;
+            
+            // 繪製大巨蛋深灰色防撞墊圍牆邊線
+            ctx.strokeStyle = "#34495e";
+            ctx.lineWidth = 5;
             ctx.stroke();
 
+            // 繪製邊線白線
+            ctx.beginPath();
+            ctx.moveTo(loc.home.x, loc.home.y);
+            ctx.lineTo(5, 100);
+            ctx.moveTo(loc.home.x, loc.home.y);
+            ctx.lineTo(355, 110);
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // 內野紅土區
             ctx.beginPath();
             ctx.moveTo(loc.home.x, loc.home.y);
             ctx.lineTo(loc.base1.x, loc.base1.y);
             ctx.lineTo(loc.base2.x, loc.base2.y);
             ctx.lineTo(loc.base3.x, loc.base3.y);
             ctx.closePath();
-            ctx.fillStyle = "#d35400";
+            ctx.fillStyle = "#c0392b";
             ctx.fill();
             ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 1.5;
             ctx.stroke();
 
+            // 繪製壘包
             const drawBaseSquare = (pos, occupied) => {
                 ctx.save();
                 ctx.translate(pos.x, pos.y);
                 ctx.rotate(45 * Math.PI / 180);
-                ctx.fillStyle = occupied ? "#e74c3c" : "#ffffff";
+                ctx.fillStyle = occupied ? "#ff3f34" : "#ffffff";
                 ctx.fillRect(-7, -7, 14, 14);
                 ctx.strokeStyle = "#111";
                 ctx.strokeRect(-7, -7, 14, 14);
@@ -263,6 +282,7 @@
             drawBaseSquare(loc.base2, gameState.bases[1]);
             drawBaseSquare(loc.base3, gameState.bases[2]);
             
+            // 本壘板
             ctx.fillStyle = "#fff";
             ctx.beginPath();
             ctx.moveTo(loc.home.x, loc.home.y - 6);
@@ -273,16 +293,10 @@
             ctx.closePath();
             ctx.fill();
 
+            // 投手丘
             ctx.beginPath();
             ctx.arc(loc.pitcher.x, loc.pitcher.y, 8, 0, Math.PI*2);
-            ctx.fillStyle = "#e74c3c";
-            ctx.fill();
-            ctx.strokeStyle = "#fff";
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.arc(loc.home.x - 20, loc.home.y, 8, 0, Math.PI*2);
-            ctx.fillStyle = "#3498db";
+            ctx.fillStyle = "#c0392b";
             ctx.fill();
             ctx.strokeStyle = "#fff";
             ctx.stroke();
@@ -560,13 +574,69 @@
                 if(isAICheck) gameState.abAway++; else gameState.abHome++; 
                 gameState.balls = 0; gameState.strikes = 0;
             } else if (result === "雙殺打") {
-                gameState.outs++;
+                gameState.outs++; // ⚡ 第 1 個出局：打者出局
                 if(isAICheck) gameState.abAway++; else gameState.abHome++; 
-                if (gameState.bases[0] && gameState.outs < 3) {
-                    gameState.outs++;
-                    gameState.bases[0] = false;
-                    document.getElementById('game-log').innerText += " (⚡ 發動雙殺！)";
+
+                // 檢查各壘包有無人的布林值
+                const has1B = gameState.bases[0];
+                const has2B = gameState.bases[1];
+                const has3B = gameState.bases[2];
+
+                // 只有在還沒滿 3 出局時，才能繼續抓第 2 個出局數
+                if (gameState.outs < 3) {
+                    
+                    if (has1B && has2B && has3B) {
+                        // 1️⃣ 滿壘 ➔ 殺三壘跑者＋打者出局。剩下二、三壘有人。
+                        gameState.outs++;
+                        gameState.bases = [false, true, true];
+                        document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺本壘跑者與打者，二三壘有人！)";
+
+                    } else if (has1B && has2B && !has3B) {
+                        // 2️⃣ 一二壘有人 ➔ 殺一壘跑者＋打者出局。剩下三壘有人。
+                        gameState.outs++;
+                        gameState.bases = [false, false, true];
+                        document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺二壘跑者與打者，三壘有人！)";
+
+                    } else if (has1B && !has2B && has3B) {
+                        // 3️⃣ 一三壘有人 ➔ 殺三壘跑者＋打者出局。剩下二壘有人。
+                        gameState.outs++;
+                        gameState.bases = [false, true, false];
+                        document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺本壘跑者與打者，二壘有人！)";
+
+                    } else if (!has1B && has2B && has3B) {
+                        // 4️⃣ 二三壘有人 ➔ 殺三壘跑者＋打者出局。剩下三壘有人。
+                        gameState.outs++;
+                        gameState.bases = [false, false, true];
+                        document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺本壘跑者與打者，二壘跑者上三壘！)";
+
+                    } else if (has1B && !has2B && !has3B) {
+                        // 5️⃣ 只有一壘有人 ➔ 殺一壘跑者＋打者出局。壘包全空。
+                        gameState.outs++;
+                        gameState.bases = [false, false, false];
+                        document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺一壘跑者與打者，壘包全空！)";
+
+                    } else if (!has1B && has2B && !has3B) {
+                        // 6️⃣ 只有二壘有人 ➔ 殺二壘跑者＋打者出局。壘包全空。
+                        gameState.outs++;
+                        gameState.bases = [false, false, false];
+                        document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺二壘跑者與打者，壘包全空！)";
+
+                    } else if (!has1B && !has2B && has3B) {
+                        // 7️⃣ 只有三壘有人 ➔ 殺三壘跑者＋打者出局。壘包全空。
+                        gameState.outs++;
+                        gameState.bases = [false, false, false];
+                        document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺三壘跑者與打者，壘包全空！)";
+
+                    } else {
+                        // 8️⃣ 壘上完全沒人 ➔ 只有打者自己出局。
+                        document.getElementById('game-log').innerText += " (內野滾地球，打者出局。)";
+                    }
+
+                } else {
+                    // 如果在雙殺前就已經 2 出局，抓到打者就直接 3 出局了
+                    document.getElementById('game-log').innerText += " (內野滾地球，打者出局，三人出局！)";
                 }
+                
                 gameState.balls = 0; gameState.strikes = 0;
             } else if (result === "全壘打") {
                 currentStats.hr++;
@@ -575,30 +645,30 @@
                 gameState.bases = [false, false, false];
                 gameState.balls = 0; gameState.strikes = 0;
             } else {
-                // 📊 修正後的逆向跑壘推進邏輯
+                // 📊 完美的棒球獨立跑壘位移邏輯
                 let numBases = 1;
                 if(result === "二壘安打") { numBases = 2; currentStats.double++; }
                 if(result === "三壘安打") { numBases = 3; currentStats.triple++; }
 
                 if(isAICheck) { gameState.hitsAway++; gameState.abAway++; } else { gameState.hitsHome++; gameState.abHome++; }
 
+                // 1. 先處理原本就在壘包上的跑者
+                let currentBases = [...gameState.bases];
+                
                 for (let b = 0; b < numBases; b++) {
-                    // 1. 三壘跑者推進
-                    if (gameState.bases[2]) { runs++; gameState.bases[2] = false; }
-                    // 2. 二壘跑者推進
-                    if (gameState.bases[1]) { gameState.bases[2] = true; gameState.bases[1] = false; }
-                    // 3. 一壘跑者推進
-                    if (gameState.bases[0]) { gameState.bases[1] = true; gameState.bases[0] = false; }
-                    
-                    // 4. 打者出發或打者在壘包間繼續推進
-                    if (b === 0) {
-                        gameState.bases[0] = true;
-                    } else {
-                        if (gameState.bases[2]) { runs++; gameState.bases[2] = false; }
-                        if (gameState.bases[1]) { gameState.bases[2] = true; gameState.bases[1] = false; }
-                        if (gameState.bases[0]) { gameState.bases[1] = true; gameState.bases[0] = false; }
+                    if (currentBases[2]) {
+                        runs++;
                     }
+                    currentBases[2] = currentBases[1]; // 二壘上三壘
+                    currentBases[1] = currentBases[0]; // 一壘上二壘
+                    currentBases[0] = false;            // 原本的一壘跑者走遠，該格洗空
                 }
+
+                // 2. 跑者全部推完後，打者再單獨放置到他對應的安打壘包上
+                currentBases[numBases - 1] = true;
+
+                // 3. 寫回主遊戲狀態
+                gameState.bases = currentBases;
                 gameState.balls = 0; gameState.strikes = 0;
             }
 
