@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚾ Baseball Battle ⚾</title>
+    <title>⚾ MLB 實況策略模擬：標準對稱球場版 ⚾</title>
     <style>
         body { background-color: #1a252f; color: #fff; font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; margin: 0; padding: 20px; }
         .game-wrapper { max-width: 850px; margin: 0 auto; background: #2c3e50; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
@@ -68,7 +68,7 @@
 <body>
 
     <div class="game-wrapper">
-        <h1>⚾ Baseball Battle ⚾</h1>
+        <h1>⚾ MLB 實況策略模擬：黃金比例球場版 ⚾</h1>
 
         <table class="scoreboard">
             <thead>
@@ -173,7 +173,7 @@
         const cardTypes = {
             foul: { type: "界外球", target: { x: 40, y: 220 }, style: "hit-foul" },
             gOut: { type: "滾地球出局", target: { x: 210, y: 220 }, style: "hit-out" },
-            fOut: { type: "高飛球接殺", target: { x: 130, y: 110 }, style: "hit-out" },
+            fOut: { type: "飛球接殺", target: { x: 130, y: 110 }, style: "hit-out" },
             lOut: { type: "平飛球接殺", target: { x: 230, y: 160 }, style: "hit-out" },
             dPlay: { type: "雙殺打", target: { x: 180, y: 200 }, style: "hit-out" },
             h1: { type: "一壘安打", target: { x: 250, y: 130 }, style: "hit-safe" },
@@ -200,7 +200,7 @@
             let cardA = finalOutcome;
             let cardB, cardC;
 
-            const isOut = (c) => ["滾地球出局", "高飛球接殺", "平飛球接殺", "雙殺打"].includes(c.type);
+            const isOut = (c) => ["滾地球出局", "飛球接殺", "平飛球接殺", "雙殺打"].includes(c.type);
 
             if (isOut(cardA)) {
                 cardB = cardTypes.foul;
@@ -385,7 +385,7 @@
         function triggerPlayerHitFlipingStage() {
             currentInPlayOptions = generateBalancedThreeCards();
 
-            document.getElementById('turn-title').innerText = "⚡ 擊中球了！請點擊任一牌面翻牌：";
+            document.getElementById('turn-title').innerText = "⚡ 擊中球了！請點擊任一牌面翻牌（內含保底安打/界外機會）：";
             const container = document.getElementById('interactive-area');
             container.innerHTML = "";
 
