@@ -231,61 +231,71 @@
 function drawField() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // 將座標系原點平移並稍微縮小比例，確保球場不會觸碰畫布邊緣
-    ctx.save();
-    ctx.translate(canvas.width / 2, 80); // 往中間移動
-    ctx.scale(0.85, 0.85);              // 縮小 15% 確保全壘打牆有留白
-    ctx.translate(-canvas.width / 2, -80);
-
-    // 1. 背景與草皮 (使用稍微往內縮的圓)
+    // 1. 繪製背景與草皮
     ctx.fillStyle = "#27ae60";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
+    // 將球場整體位置微調（向下移），避免邊緣被裁切，但不影響整體縮放
+    const offsetX = 0;
+    const offsetY = 10; 
+    
     ctx.beginPath();
-    ctx.moveTo(loc.home.x, loc.home.y);
-    ctx.arc(loc.home.x, loc.home.y, 265, Math.PI * 1.25, Math.PI * 1.75, false);
+    ctx.moveTo(loc.home.x + offsetX, loc.home.y + offsetY);
+    ctx.arc(loc.home.x + offsetX, loc.home.y + offsetY, 255, Math.PI * 1.25, Math.PI * 1.75, false);
     ctx.closePath();
     ctx.fillStyle = "#27ae60";
     ctx.fill();
     ctx.strokeStyle = "#2c3e50";
-    ctx.lineWidth = 10; // 加粗牆面
+    ctx.lineWidth = 8;
     ctx.stroke();
 
-    // 2. 邊線 (這時候因為整個球場縮小了，邊線絕對不會碰到外框)
+    // 2. 繪製左右兩側界內線 (限制長度，確保在畫布內)
     ctx.beginPath();
     ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 4;
-    ctx.moveTo(loc.home.x, loc.home.y);
-    ctx.lineTo(loc.home.x + 300 * Math.cos(Math.PI * 1.25), loc.home.y + 300 * Math.sin(Math.PI * 1.25));
-    ctx.moveTo(loc.home.x, loc.home.y);
-    ctx.lineTo(loc.home.x + 300 * Math.cos(Math.PI * 1.75), loc.home.y + 300 * Math.sin(Math.PI * 1.75));
+    ctx.lineWidth = 3;
+    const lineLen = 220;
+    ctx.moveTo(loc.home.x + offsetX, loc.home.y + offsetY);
+    ctx.lineTo(loc.home.x + offsetX + lineLen * Math.cos(Math.PI * 1.25), loc.home.y + offsetY + lineLen * Math.sin(Math.PI * 1.25));
+    ctx.moveTo(loc.home.x + offsetX, loc.home.y + offsetY);
+    ctx.lineTo(loc.home.x + offsetX + lineLen * Math.cos(Math.PI * 1.75), loc.home.y + offsetY + lineLen * Math.sin(Math.PI * 1.75));
     ctx.stroke();
 
-    // 3. 內野區塊 (保持不動)
+    // 3. 內野
     ctx.beginPath();
-    ctx.moveTo(loc.home.x, loc.home.y);
-    ctx.lineTo(loc.base3.x, loc.base3.y);
-    ctx.lineTo(loc.base2.x, loc.base2.y);
-    ctx.lineTo(loc.base1.x, loc.base1.y);
+    ctx.moveTo(loc.home.x + offsetX, loc.home.y + offsetY);
+    ctx.lineTo(loc.base3.x + offsetX, loc.base3.y + offsetY);
+    ctx.lineTo(loc.base2.x + offsetX, loc.base2.y + offsetY);
+    ctx.lineTo(loc.base1.x + offsetX, loc.base1.y + offsetY);
     ctx.closePath();
     ctx.fillStyle = "#d35400";
     ctx.fill();
 
-    // 4. 壘包與其他物件
-    // (這裡維持你原本的壘包繪製邏輯即可)
+    // 4. 壘包
     const drawBase = (pos, occupied) => {
         ctx.fillStyle = occupied ? "#ff3f34" : "#ffffff";
-        ctx.fillRect(pos.x - 6, pos.y - 6, 12, 12);
+        ctx.fillRect(pos.x + offsetX - 6, pos.y + offsetY - 6, 12, 12);
     };
     drawBase(loc.base1, gameState.bases[0]);
     drawBase(loc.base2, gameState.bases[1]);
     drawBase(loc.base3, gameState.bases[2]);
-    
-    // 本壘
     ctx.fillStyle = "#fff";
-    ctx.fillRect(loc.home.x - 6, loc.home.y - 6, 12, 12);
+    ctx.fillRect(loc.home.x + offsetX - 6, loc.home.y + offsetY - 6, 12, 12);
 
-    ctx.restore(); // 取消縮放效果，避免影響到後續的飛球動畫
+    // 5. 投手丘
+    ctx.beginPath();
+    ctx.arc(loc.pitcher.x + offsetX, loc.pitcher.y + offsetY, 6, 0, Math.PI * 2);
+    ctx.fillStyle = "#d35400";
+    ctx.fill();
+
+    // 6. 重要：恢復球的繪製（這裡會根據你的 ball 物件位置繪圖）
+    if (ball.active) {
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, 5, 0, Math.PI * 2); // 使用真實的 ball.x/y
+        ctx.fillStyle = "#ffffff";
+        ctx.fill();
+        ctx.strokeStyle = "#000";
+        ctx.stroke();
+    }
 }
         function animateBall(startX, startY, endX, endY, speed, callback) {
             ball.x = startX;
