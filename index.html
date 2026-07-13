@@ -231,48 +231,44 @@
 function drawField() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // 設定全域偏移，讓球場往畫布中間靠攏
-    // 假設畫布寬 360，我們把本壘稍微向上移，騰出更多空間給外野
-    const centerX = canvas.width / 2;
-    const homeY = 240; 
-    
-    // 1. 繪製草皮背景
+    // 1. 背景色 (全域底)
     ctx.fillStyle = "#27ae60";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // 繪製扇形草皮 (將半徑從 265 縮小到 220，確保不會觸碰上下左右邊界)
-    const radius = 220; 
-    ctx.beginPath();
-    ctx.moveTo(centerX, homeY);
-    ctx.arc(centerX, homeY, radius, Math.PI * 1.2, Math.PI * 1.8, false);
-    ctx.closePath();
-    ctx.fillStyle = "#27ae60";
-    ctx.fill();
-    ctx.strokeStyle = "#2c3e50";
-    ctx.lineWidth = 6;
-    ctx.stroke();
 
-    // 2. 左右邊線 (長度縮短，確保兩端完全在畫布內)
+    // 2. 先畫界內線 (這樣它們會在牆的底層，不會被牆蓋過)
+    const radius = 265;
     ctx.beginPath();
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 3;
-    const lineLen = 200; 
-    ctx.moveTo(centerX, homeY);
-    ctx.lineTo(centerX + lineLen * Math.cos(Math.PI * 1.2), homeY + lineLen * Math.sin(Math.PI * 1.2));
-    ctx.moveTo(centerX, homeY);
-    ctx.lineTo(centerX + lineLen * Math.cos(Math.PI * 1.8), homeY + lineLen * Math.sin(Math.PI * 1.8));
+    ctx.moveTo(loc.home.x, loc.home.y);
+    // 計算精確的邊線落點
+    ctx.lineTo(loc.home.x + radius * Math.cos(Math.PI * 1.25), loc.home.y + radius * Math.sin(Math.PI * 1.25));
+    ctx.moveTo(loc.home.x, loc.home.y);
+    ctx.lineTo(loc.home.x + radius * Math.cos(Math.PI * 1.75), loc.home.y + radius * Math.sin(Math.PI * 1.75));
     ctx.stroke();
 
-    // 3. 內野紅土 (使用固定的相對座標)
-    const size = 60; // 內野大小
+    // 3. 再畫全壘打牆 (用 clip 或後畫，確保蓋住線條的「出界」部分)
     ctx.beginPath();
-    ctx.moveTo(centerX, homeY);
-    ctx.lineTo(centerX - size, homeY - size);
-    ctx.lineTo(centerX, homeY - size * 2);
-    ctx.lineTo(centerX + size, homeY - size);
+    ctx.moveTo(loc.home.x, loc.home.y);
+    ctx.arc(loc.home.x, loc.home.y, radius, Math.PI * 1.25, Math.PI * 1.75, false);
     ctx.closePath();
-    ctx.fillStyle = "#d35400";
+    
+    // 為了不讓線條太厚影響邊界，我們將繪製樣式調整
+    ctx.strokeStyle = "#2c3e50";
+    ctx.lineWidth = 6; 
+    ctx.stroke();
+
+    // 4. 補上內野紅土 (確保最後覆蓋在白線與牆之上)
+    ctx.beginPath();
+    ctx.moveTo(loc.home.x, loc.home.y);
+    ctx.lineTo(loc.base3.x, loc.base3.y);
+    ctx.lineTo(loc.base2.x, loc.base2.y);
+    ctx.lineTo(loc.base1.x, loc.base1.y);
+    ctx.closePath();
+    ctx.fillStyle = "#cd7f32";
     ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.3)";
+    ctx.stroke();
 
     // 4. 壘包 (根據 centerX, homeY 動態計算)
     const drawBase = (x, y, occupied) => {
