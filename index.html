@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>⚾ MLB 實況策略模擬：動態平衡校正版 ⚾</title>
+    <title>⚾ MLB 實況策略模擬：完美跑壘版 ⚾</title>
     <style>
         body { background-color: #1a252f; color: #fff; font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; margin: 0; padding: 20px; }
         .game-wrapper { max-width: 850px; margin: 0 auto; background: #2c3e50; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
@@ -66,7 +66,7 @@
 <body>
 
     <div class="game-wrapper">
-        <h1>⚾ MLB 實況策略模擬：動態平衡校正版 ⚾</h1>
+        <h1>⚾ MLB 實況策略模擬：完美跑壘版 ⚾</h1>
 
         <table class="scoreboard">
             <thead>
@@ -148,7 +148,7 @@
             scoreAway: Array(9).fill(null), scoreHome: Array(9).fill(null),
             hitsAway: 0, hitsHome: 0, gameOver: false,
             
-            // 新增打數統計，用來精準計算打擊率 (打數 = 安打 + 出局，不含保送、界外)
+            // 打數統計，計算真實打擊率
             abAway: 0, abHome: 0,
 
             stats: {
@@ -161,7 +161,6 @@
         let forcedTargetIndex = 0; // 紀錄被後台注定的那張卡牌索引
         let animId;
 
-        // 定義基礎卡牌結構
         const cardTypes = {
             foul: { type: "界外球", target: { x: 40, y: 180 }, style: "hit-foul" },
             gOut: { type: "滾地球出局", target: { x: 210, y: 190 }, style: "hit-out" },
@@ -174,7 +173,7 @@
             hr: { type: "全壘打", target: { x: 180, y: -20 }, style: "hit-safe" }
         };
 
-        // 🎯 大聯盟實況真實比例池 (用來決定「注定結果」)
+        // 🎯 大聯盟實況真實比例池
         function getRandomMLBResult() {
             const rand = Math.random() * 100;
             if (rand < 32.0) return cardTypes.foul;   // 界外球 (32%)
@@ -188,43 +187,33 @@
             return cardTypes.hr;                      // 全壘打 (3%)
         }
 
-        // 🛠️ 心理防爆平衡卡牌生成器：確保三選一的期望值不變，且禁止出現三張皆出局
+        // 🛠️ 期望值校正且防爆的卡牌配牌器
         function generateBalancedThreeCards() {
-            // 1. 先抽取這一次接觸的「注定實質結果」
             const finalOutcome = getRandomMLBResult();
-            
             let cardA = finalOutcome;
             let cardB, cardC;
 
-            // 2. 根據 A 的屬性，去偽造配牌，避開「三張全是出局」的客訴地雷
             const isOut = (c) => ["滾地球出局", "飛球接殺", "平飛球接殺", "雙殺打"].includes(c.type);
 
             if (isOut(cardA)) {
-                // 如果注定是出局，另外兩張卡絕對不能都是出局！強迫配一張「界外球」與一張「安打」來混淆與防爆
                 cardB = cardTypes.foul;
                 const hitPool = [cardTypes.h1, cardTypes.h2, cardTypes.h3, cardTypes.hr];
                 cardC = hitPool[Math.floor(Math.random() * hitPool.length)];
             } else if (cardA.type === "界外球") {
-                // 如果注定是界外球，另外兩張隨機配出局與安打
                 cardB = cardTypes.gOut;
                 cardC = cardTypes.h1;
             } else {
-                // 如果注定是安打，另外兩張配出局與界外，防爆自然成立
                 cardB = cardTypes.fOut;
                 cardC = cardTypes.foul;
             }
 
-            // 3. 把這三張牌隨機打亂，並追蹤「注定結果」最後跑到哪個索引
             let cards = [cardA, cardB, cardC];
-            // 隨機洗牌
             for (let i = cards.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [cards[i], cards[j]] = [cards[j], cards[i]];
             }
 
-            // 找出 finalOutcome 在洗牌後的新位置，玩家不管點哪張，都會執行這個注定結果，達成精準期望值校正！
             forcedTargetIndex = cards.findIndex(c => c.type === finalOutcome.type);
-
             return cards;
         }
 
@@ -360,7 +349,6 @@
         }
 
         function triggerPlayerHitFlipingStage() {
-            // 使用期望值校正且防爆的新函式
             currentInPlayOptions = generateBalancedThreeCards();
 
             document.getElementById('turn-title').innerText = "⚡ 擊中球了！請點擊任一牌面翻牌（內含保底安打/界外機會）：";
@@ -383,17 +371,12 @@
 
         function revealPlayerHitCard(selectedIndex) {
             document.getElementById('interactive-area').className = "cards-row disabled-zone";
-            
-            // 期望值核心：不論玩家選哪張，翻開的實質結果都是後台精準計算過的那張 forcedTargetIndex 卡牌！
             const chosenObject = currentInPlayOptions[forcedTargetIndex];
 
-            // 讓畫面上玩家點擊的那張牌，動態置換成注定的結果，完成視覺演出
             document.getElementById(`resFront${selectedIndex}`).innerText = chosenObject.type;
             document.getElementById(`resFront${selectedIndex}`).className = `card-front ${chosenObject.style}`;
 
-            // 全體翻牌翻開
             for (let i = 0; i < 3; i++) {
-                // 如果不是玩家點的那張，就維持它原本洗牌後的位置顯示
                 document.getElementById(`resSlot${i}`).className += " flipped";
             }
 
@@ -448,7 +431,6 @@
                     handleStrike();
                     unlockActionZone();
                 } else if (pitchType === "好球" && aiSwing) {
-                    // AI 的打擊也同樣走真實 MLB 比例
                     const aiHit = getRandomMLBResult();
                     logMsg += `AI 打擊出去！結果為：【${aiHit.type}】`;
                     document.getElementById('game-log').innerText = logMsg;
@@ -538,7 +520,7 @@
             if (gameState.strikes >= 3) {
                 gameState.outs++;
                 document.getElementById('game-log').innerText += " ☠️ 遭到三振出局！";
-                if(!gameState.isTop) gameState.abHome++; // 三振算打數
+                if(!gameState.isTop) gameState.abHome++; 
                 else gameState.abAway++;
                 gameState.balls = 0; gameState.strikes = 0;
             }
@@ -575,11 +557,11 @@
                 if (gameState.strikes < 2) gameState.strikes++;
             } else if (result === "滾地球出局" || result === "飛球接殺" || result === "平飛球接殺") {
                 gameState.outs++;
-                if(isAICheck) gameState.abAway++; else gameState.abHome++; // 記錄打數
+                if(isAICheck) gameState.abAway++; else gameState.abHome++; 
                 gameState.balls = 0; gameState.strikes = 0;
             } else if (result === "雙殺打") {
                 gameState.outs++;
-                if(isAICheck) gameState.abAway++; else gameState.abHome++; // 記錄打數
+                if(isAICheck) gameState.abAway++; else gameState.abHome++; 
                 if (gameState.bases[0] && gameState.outs < 3) {
                     gameState.outs++;
                     gameState.bases[0] = false;
@@ -593,6 +575,7 @@
                 gameState.bases = [false, false, false];
                 gameState.balls = 0; gameState.strikes = 0;
             } else {
+                // 📊 修正後的逆向跑壘推進邏輯
                 let numBases = 1;
                 if(result === "二壘安打") { numBases = 2; currentStats.double++; }
                 if(result === "三壘安打") { numBases = 3; currentStats.triple++; }
@@ -600,10 +583,21 @@
                 if(isAICheck) { gameState.hitsAway++; gameState.abAway++; } else { gameState.hitsHome++; gameState.abHome++; }
 
                 for (let b = 0; b < numBases; b++) {
+                    // 1. 三壘跑者推進
                     if (gameState.bases[2]) { runs++; gameState.bases[2] = false; }
+                    // 2. 二壘跑者推進
                     if (gameState.bases[1]) { gameState.bases[2] = true; gameState.bases[1] = false; }
+                    // 3. 一壘跑者推進
                     if (gameState.bases[0]) { gameState.bases[1] = true; gameState.bases[0] = false; }
-                    if (b === 0) { gameState.bases[numBases-1] = true; }
+                    
+                    // 4. 打者出發或打者在壘包間繼續推進
+                    if (b === 0) {
+                        gameState.bases[0] = true;
+                    } else {
+                        if (gameState.bases[2]) { runs++; gameState.bases[2] = false; }
+                        if (gameState.bases[1]) { gameState.bases[2] = true; gameState.bases[1] = false; }
+                        if (gameState.bases[0]) { gameState.bases[1] = true; gameState.bases[0] = false; }
+                    }
                 }
                 gameState.balls = 0; gameState.strikes = 0;
             }
@@ -653,7 +647,6 @@
             let totalAway = gameState.scoreAway.reduce((a, b) => (a||0) + (b||0), 0);
             let totalHome = gameState.scoreHome.reduce((a, b) => (a||0) + (b||0), 0);
             
-            // 計算雙方實質打擊率 (安打 / 打數)
             let avgHome = gameState.abHome > 0 ? (gameState.hitsHome / gameState.abHome).toFixed(3) : ".000";
             let avgAway = gameState.abAway > 0 ? (gameState.hitsAway / gameState.abAway).toFixed(3) : ".000";
 
