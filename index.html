@@ -7,24 +7,35 @@
     <title>⚾ Baseball Battle ⚾</title>
 <style>
         /* ==========================================
-           1. 電腦版預設樣式（完全保留你原本的精緻設定）
+           1. 電腦版預設樣式（維持你原本的精緻設定，並固定記分板）
            ========================================== */
         body { background-color: #1a252f; color: #fff; font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; margin: 0; padding: 20px; }
         .game-wrapper { max-width: 850px; margin: 0 auto; background: #2c3e50; padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
         h1 { color: #f1c40f; margin-top: 0; text-shadow: 2px 2px #000; font-size: 28px; }
         
-        /* 記分板外殼 */
+        /* 💡 修正電腦版記分板不固定：在外殼強行鎖定 100% 寬度與表格佈局 */
         .table-container {
-            width: 100%;
+            width: 100% !important;
+            max-width: 100% !important;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             margin-bottom: 20px;
             border-radius: 5px;
+            display: block;
         }
 
-        /* 記分板 */
-        .scoreboard { width: 100%; border-collapse: collapse; background: #111; color: #00ff00; font-family: 'Courier New', monospace; font-size: 18px; border: 3px solid #7f8c8d; }
-        .scoreboard th, .scoreboard td { border: 1px solid #444; padding: 10px; text-align: center; white-space: nowrap; min-width: 35px; }
+        /* 💡 修正：強迫表格填滿寬度，並採取固定算法 (fixed)，格子才不會隨分數多寡而扭曲變形 */
+        .scoreboard { 
+            width: 100% !important; 
+            table-layout: fixed !important; 
+            border-collapse: collapse; 
+            background: #111; 
+            color: #00ff00; 
+            font-family: 'Courier New', monospace; 
+            font-size: 18px; 
+            border: 3px solid #7f8c8d; 
+        }
+        .scoreboard th, .scoreboard td { border: 1px solid #444; padding: 10px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .scoreboard th { background: #222; color: #bdc3c7; }
         .active-inning { color: #fff; background: #c0392b; font-weight: bold; border-radius: 3px; }
 
@@ -44,9 +55,9 @@
         .stadium-container { flex: 1.3; min-width: 340px; background: #16a085; border: 5px solid #111; border-radius: 10px; position: relative; padding: 0; box-sizing: border-box; overflow: hidden; height: 300px;}
         canvas { background-color: #27ae60; display: block; margin: 0 auto; max-width: 100%; height: auto; }
 
-        /* 操作面板區與卡牌 */
+        /* 操作面板區與卡牌：電腦版維持原本並排 */
         .card-container { background: #34495e; padding: 20px; border-radius: 10px; border: 2px solid #455a64; margin-top: 10px; min-height: 220px;}
-        .cards-row { display: flex; justify-content: center; gap: 20px; margin: 15px 0; min-height: 140px; align-items: center; }
+        .cards-row { display: flex !important; flex-direction: row !important; justify-content: center; gap: 20px; margin: 15px 0; min-height: 140px; align-items: center; }
         
         /* 決策按鈕 */
         .action-btn { padding: 20px 40px; font-size: 22px; font-weight: bold; border: 3px solid #fff; border-radius: 10px; cursor: pointer; color: white; transition: transform 0.1s; box-shadow: 0 5px #000; }
@@ -78,45 +89,48 @@
         .disabled-zone { pointer-events: none; opacity: 0.5; }
 
         /* ==========================================
-           2. 📱 行動裝置專屬樣式（寬度 768px 以下才啟動）
+           2. 📱 行動裝置專屬樣式（⚠️ 加上最高優先權鎖定左右並排）
            ========================================== */
         @media (max-width: 768px) {
             body { padding: 10px; }
             .game-wrapper { padding: 10px; border-radius: 8px; }
             h1 { font-size: 22px; }
             
-            /* 行動端：核心區塊改為垂直堆疊 */
-            .game-layout { flex-direction: column; gap: 15px; }
-            .bso-panel, .stadium-container { width: 100%; min-width: 100%; box-sizing: border-box; }
+            /* 行動端核心區塊上下堆疊 */
+            .game-layout { flex-direction: column !important; gap: 15px; }
+            .bso-panel, .stadium-container { width: 100% !important; min-width: 100% !important; box-sizing: border-box; }
             .stadium-container { height: 260px; }
             
-            /* 💡 修正：強制按鈕區域在手機上保持左右橫向並排，並微調間距 */
-            .cards-row { 
+            /* 💡 終極修正：下猛藥！用強制標籤阻斷可能被 JS 複寫的行內樣式，確保手機版一定左右並排 */
+            #interactive-area, .cards-row { 
                 display: flex !important; 
                 flex-direction: row !important; 
                 justify-content: space-between !important; 
                 gap: 10px !important; 
-                flex-wrap: nowrap !important; /* 阻止它自動換行換到上下 */
+                flex-wrap: nowrap !important; /* 絕對禁止換行變上下 */
+                width: 100% !important;
             }
             
-            /* 💡 修正：讓兩個決策按鈕均分寬度，各佔 50%，保持完美的左右對稱 */
-            .cards-row .action-btn { 
-                flex: 1; 
-                width: 50%; 
-                padding: 15px 0; 
-                font-size: 18px; 
+            /* 💡 終極修正：強制讓兩個主要按鈕平分空間，各佔 50% */
+            #interactive-area .action-btn, .cards-row .action-btn { 
+                display: inline-block !important;
+                flex: 1 !important; 
+                width: 50% !important; 
+                padding: 15px 0 !important; 
+                font-size: 18px !important; 
+                box-sizing: border-box !important;
             }
             
-            /* 打擊成果蓋牌如果太多，在手機上仍保留彈性縮放 */
-            .cards-row .result-card-slot {
-                flex: none;
-                width: 75px; /* 手機版蓋牌卡片稍微縮小，以免塞不下 */
-                height: 105px;
+            /* 打擊成果蓋牌卡片如果是放在 row 裡面，在手機上縮小尺寸防止塞爆 */
+            #interactive-area .result-card-slot, .cards-row .result-card-slot {
+                flex: none !important;
+                width: 75px !important; 
+                height: 105px !important;
             }
-            .card-back { font-size: 22px; }
-            .card-front { font-size: 13px; }
+            .card-back { font-size: 22px !important; }
+            .card-front { font-size: 13px !important; }
 
-            .btn-action { width: 100%; box-sizing: border-box; }
+            .btn-action { width: 100% !important; box-sizing: border-box; }
         }
     </style>
 </head>
