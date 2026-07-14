@@ -219,21 +219,44 @@ function playBGM() {
     });
 }
 
-function speakEnglish(text) {
-            // 先強行取消之前還沒講完的話
-            window.speechSynthesis.cancel();
-            
-            let utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US'; // 強制美式英文
-            
-            // 💡 終極地獄變聲設定：
-            // 音調拉到最極限的低頻（0.5是絕大多數瀏覽器的極限低音）
-            utterance.pitch = 0.5;   
-            // 語速一定要放慢，拉長聲帶震動的頻率，女聲的高音才不會露餡
-            utterance.rate = 0.85;   
+// 💡 終極完美對應版：大聯盟真人男聲 MP3 播放器
+        function speakEnglish(text) {
+            let url = "";
+            let t = text.trim();
 
-            window.speechSynthesis.speak(utterance);
+            // 🔍 完美精準比對你程式碼中的所有棒球術語用詞
+            if (t === "Strike!" || t === "好球") {
+                url = "https://cf-media.sndup.net/development/strike.mp3"; // 男聲喊 Strike!
+            } else if (t === "Ball!" || t === "壞球") {
+                url = "https://cf-media.sndup.net/development/ball.mp3";   // 男聲喊 Ball!
+            } else if (t === "全壘打") {
+                url = "https://cf-media.sndup.net/development/homerun.mp3"; // 男聲喊 Home run!
+            } else if (t === "一壘安打" || t === "二壘安打" || t === "三壘安打" || t.includes("安打")) {
+                url = "https://cf-media.sndup.net/development/hit.mp3";     // 男聲喊 Base hit!
+            } else if (t === "界外球") {
+                url = "https://cf-media.sndup.net/development/foul.mp3";    // 男聲喊 Foul ball!
+            } else if (
+                t === "滾地球出局" || 
+                t === "高飛球接殺" || 
+                t === "平飛球接殺" || 
+                t === "雙殺打" || 
+                t.includes("出局") || 
+                t.includes("接殺") || 
+                t === "Out!"
+            ) {
+                url = "https://cf-media.sndup.net/development/out.mp3";     // 男聲喊 Out!
+            } else if (t === "Contact!") {
+                url = "https://cf-media.sndup.net/development/bat_hit.mp3"; // 純球棒擊球音效
+            }
+
+            // 如果有配對到對應的音檔網址，就立刻播放
+            if (url) {
+                let audio = new Audio(url);
+                audio.volume = 1.0; // 讓裁判聲音蓋過背景音樂
+                audio.play().catch(e => console.log("音檔播放失敗，需等待玩家點擊互動過後始可觸發:", e));
+            }
         }
+        
         // --- Canvas 與核心幾何配置（45度完美對稱 1/4 圓結構） ---
         const canvas = document.getElementById("fieldCanvas");
         const ctx = canvas.getContext("2d");
