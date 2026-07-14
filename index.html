@@ -220,38 +220,48 @@ function playBGM() {
 }
 
 function speakEnglish(text) {
-            // 先強行取消之前還沒講完的話，免得音效堆疊延遲
-            window.speechSynthesis.cancel();
+            window.speechSynthesis.cancel(); // 先取消前一球
             
             let utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US'; // 強制美式英文
+            utterance.lang = 'en-US';
             
-            // 💡 取得瀏覽器目前支援的所有語音清單
+            // 💡 撈出目前裝置內建的所有語音清單
             let voices = window.speechSynthesis.getVoices();
             
-            // 💡 篩選出符合美式英文且傾向男聲的語音庫
-            let maleVoice = voices.find(voice => 
-                voice.lang.includes('en-US') && 
-                (voice.name.toLowerCase().includes('male') || 
-                 voice.name.toLowerCase().includes('google') || 
-                 voice.name.toLowerCase().includes('david')) &&
-                !voice.name.toLowerCase().includes('natural') // 避開可能預設偏女聲的 natural
-            );
-            
-            // 如果有找到適合的男聲，就套用它；沒有的話就用系統預設美式英文
-            if (maleVoice) {
-                utterance.voice = maleVoice;
+            // 💡 建立男聲優先順序關鍵字清單（包含常見的 Windows, Mac, Google 男聲）
+            let maleKeywords = ['david', 'mark', 'ravi', 'male', 'google us english', 'microsoft'];
+            let selectedVoice = null;
+
+            // 💡 用關鍵字去比對，抓出真正的英文男聲
+            for (let kw of maleKeywords) {
+                selectedVoice = voices.find(v => v.lang.includes('en-US') && v.name.toLowerCase().includes(kw));
+                if (selectedVoice) break; // 只要找到了就立刻跳出
             }
 
-            utterance.rate = 1.15; // 語速微調，讓裁判喊起來更有張力
-            utterance.pitch = 0.9;  // 稍微降低音調 (0.5 ~ 2.0)，讓聲音聽起來更渾厚、更像成熟男裁判
+            // 如果真的不幸完全找不到男聲關鍵字，就抓第一個美式英文語音
+            if (!selectedVoice) {
+                selectedVoice = voices.find(v => v.lang.includes('en-US'));
+            }
+
+            // 💡 成功鎖定男聲！
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+                console.log("成功鎖定裁判語音：", selectedVoice.name); // 你可以在瀏覽器 F12 檢查抓到誰
+            }
+
+            // 調整到最適合男裁判的渾厚語氣
+            utterance.rate = 1.15; 
+            utterance.pitch = 0.85; 
 
             window.speechSynthesis.speak(utterance);
         }
 
-        // 解決 Chrome/Safari 語音清單非同步載入的經典 bug，確保第一次播就有聲音
+        // ⚠️ 關鍵核心：因為 Chrome/Safari 的語音清單是「非同步載入」
+        // 必須加上這個監聽器，否則網頁一剛打開時 getVoices() 會是空的，導致抓不到男聲！
         if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+            speechSynthesis.onvoiceschanged = function() {
+                window.speechSynthesis.getVoices();
+            };
         }
         // --- Canvas 與核心幾何配置（45度完美對稱 1/4 圓結構） ---
         const canvas = document.getElementById("fieldCanvas");
