@@ -597,7 +597,7 @@ function processBattedBall(result, isAICheck) {
     } 
     
     // == 2. 普通出局 ==
-    if (result === "滾地球出局" || result === "飛球接殺" || result === "平飛球接殺") {
+    if (result === "滾地球出局" || result === "高飛球接殺" || result === "平飛球接殺") {
         gameState.outs++;
         if(isAICheck) gameState.abAway++; else gameState.abHome++; 
         gameState.balls = 0; gameState.strikes = 0;
