@@ -88,8 +88,8 @@
         #restart-game-btn { background: #2980b9; }
         .disabled-zone { pointer-events: none; opacity: 0.5; }
 
-        /* ==========================================
-           2. 📱 行動裝置專屬樣式（⚠️ 加上最高優先權鎖定左右並排）
+/* ==========================================
+           2. 📱 行動裝置專屬樣式（強制按鈕左右並排）
            ========================================== */
         @media (max-width: 768px) {
             body { padding: 10px; }
@@ -101,27 +101,30 @@
             .bso-panel, .stadium-container { width: 100% !important; min-width: 100% !important; box-sizing: border-box; }
             .stadium-container { height: 260px; }
             
-            /* 💡 終極修正：下猛藥！用強制標籤阻斷可能被 JS 複寫的行內樣式，確保手機版一定左右並排 */
+            /* 🚀 絕招一：強迫按鈕外層容器變成 Flex 橫向排隊 */
             #interactive-area, .cards-row { 
                 display: flex !important; 
-                flex-direction: row !important; 
+                flex-direction: row !important; /* 確保一定是左右 */
                 justify-content: space-between !important; 
                 gap: 10px !important; 
-                flex-wrap: nowrap !important; /* 絕對禁止換行變上下 */
+                flex-wrap: nowrap !important; /* 絕對禁止換行 */
                 width: 100% !important;
-            }
-            
-            /* 💡 終極修正：強制讓兩個主要按鈕平分空間，各佔 50% */
-            #interactive-area .action-btn, .cards-row .action-btn { 
-                display: inline-block !important;
-                flex: 1 !important; 
-                width: 50% !important; 
-                padding: 15px 0 !important; 
-                font-size: 18px !important; 
                 box-sizing: border-box !important;
             }
             
-            /* 打擊成果蓋牌卡片如果是放在 row 裡面，在手機上縮小尺寸防止塞爆 */
+            /* 🚀 絕招二：強迫按鈕不當 block，並塞入寬度各 50% 鎖死左右 */
+            #interactive-area .action-btn, .cards-row .action-btn { 
+                display: block !important; /* 或是 inline-block，但在 flex 容器下它會遵守 flex 分配 */
+                flex: 1 !important;        /* 兩顆按鈕均分剩餘空間 */
+                width: 48% !important;     /* 預留一點 gap 的扣打 */
+                max-width: 50% !important; 
+                padding: 15px 0 !important; 
+                font-size: 18px !important; 
+                box-sizing: border-box !important;
+                margin: 0 !important;      /* 消除可能被 JS 加上導致爆行的 margin */
+            }
+            
+            /* 打擊成果蓋牌卡片如果是放在 row 裡面，在手機上縮小尺寸 */
             #interactive-area .result-card-slot, .cards-row .result-card-slot {
                 flex: none !important;
                 width: 75px !important; 
