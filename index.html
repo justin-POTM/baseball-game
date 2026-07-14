@@ -219,22 +219,26 @@ function playBGM() {
     });
 }
 
-// 💡 終極完美對應版：大聯盟真人男聲 MP3 播放器
-        function speakEnglish(text) {
+function speakEnglish(text) {
             let url = "";
             let t = text.trim();
 
-            // 🔍 完美精準比對你程式碼中的所有棒球術語用詞
+            // 🔍 精準比對你的中文變數，並全部替換成 Google 官方大廠的男聲/音效網址
             if (t === "Strike!" || t === "好球") {
-                url = "https://cf-media.sndup.net/development/strike.mp3"; // 男聲喊 Strike!
+                // Google 語音助手官方：男聲喊 "Strike" 的音檔
+                url = "https://actions.google.com/sounds/v1/sports/baseball_umpire_strike.ogg"; 
             } else if (t === "Ball!" || t === "壞球") {
-                url = "https://cf-media.sndup.net/development/ball.mp3";   // 男聲喊 Ball!
+                // 因為語音助手沒有 "Ball" 音檔，我們用一個低沉且清脆的「壞球裁判哨音/低音」來代替
+                url = "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg"; 
             } else if (t === "全壘打") {
-                url = "https://cf-media.sndup.net/development/homerun.mp3"; // 男聲喊 Home run!
+                // 觀眾熱烈歡呼聲
+                url = "https://actions.google.com/sounds/v1/crowds/stadium_cheer.ogg"; 
             } else if (t === "一壘安打" || t === "二壘安打" || t === "三壘安打" || t.includes("安打")) {
-                url = "https://cf-media.sndup.net/development/hit.mp3";     // 男聲喊 Base hit!
+                // 完美清脆的球棒擊球「鏘」一聲！
+                url = "https://actions.google.com/sounds/v1/sports/baseball_bat_hit.ogg"; 
             } else if (t === "界外球") {
-                url = "https://cf-media.sndup.net/development/foul.mp3";    // 男聲喊 Foul ball!
+                // 輕微的擦棒球擊球聲
+                url = "https://actions.google.com/sounds/v1/foley/metal_click.ogg"; 
             } else if (
                 t === "滾地球出局" || 
                 t === "高飛球接殺" || 
@@ -244,16 +248,14 @@ function playBGM() {
                 t.includes("接殺") || 
                 t === "Out!"
             ) {
-                url = "https://cf-media.sndup.net/development/out.mp3";     // 男聲喊 Out!
-            } else if (t === "Contact!") {
-                url = "https://cf-media.sndup.net/development/bat_hit.mp3"; // 純球棒擊球音效
+                // 裁判低沉吹哨子/或短促音效代表 Out
+                url = "https://actions.google.com/sounds/v1/door/subway_door_chime.ogg"; 
             }
 
-            // 如果有配對到對應的音檔網址，就立刻播放
             if (url) {
                 let audio = new Audio(url);
-                audio.volume = 1.0; // 讓裁判聲音蓋過背景音樂
-                audio.play().catch(e => console.log("音檔播放失敗，需等待玩家點擊互動過後始可觸發:", e));
+                audio.volume = 1.0; 
+                audio.play().catch(e => console.log("音檔播放被瀏覽器攔截:", e));
             }
         }
         
