@@ -518,9 +518,8 @@ function playSound(content) {
     else if (t === "壞球") url = "balls.mp3";
     else if (t === "全壘打") url = "homerun.mp3";
     else if (t === "安打") url = "hit.mp3"; // 簡化判定，先求有
-    else if (t === "界外球") url = "foulball.mp3";
-    else if (t === "擊中球") url = "hit.mp3";
-    else if (t === "滾地球出局" || t === "高飛球接殺" || t === "平飛球接殺" || t === "雙殺打") url = "out.mp3";
+    else if (t === "界外") url = "foulball.mp3";
+    else if (t === "出局") url = "out.mp3";
 
     // 關鍵除錯點
     if (url !== "") {
@@ -596,10 +595,10 @@ function playSound(content) {
                 
                 // 💡 玩家擊球翻牌結果語音對應
                 let resultText = chosenObject.type;
-                if (resultText.includes("全壘打")) playSound("Home run!");
-                else if (resultText.includes("安打")) playSound("Base hit!");
-                else if (resultText.includes("界外")) playSound("Foul ball!");
-                else playSound("Out!");
+                if (resultText.includes("全壘打")) playSound("全壘打");
+                else if (resultText.includes("安打")) playSound("安打");
+                else if (resultText.includes("界外")) playSound("界外");
+                else playSound("出局");
 
                 animateBall(loc.home.x, loc.home.y, chosenObject.target.x, chosenObject.target.y, 8, () => {
                     processBattedBall(chosenObject.type, false);
@@ -636,19 +635,19 @@ function playSound(content) {
                 if (pitchType === "好球" && !aiSwing) {
                     logMsg += "AI 站著不動，這是一記好球！";
                     document.getElementById('game-log').innerText = logMsg;
-                    playSound("Strike!");
+                    playSound("好球");
                     handleStrike();
                     unlockActionZone();
                 } else if (pitchType === "壞球" && !aiSwing) {
                     logMsg += "AI 精準選球，這是一記壞球。";
                     document.getElementById('game-log').innerText = logMsg;
-                    playSound("Ball!");
+                    playSound("壞球");
                     handleBall();
                     unlockActionZone();
                 } else if (pitchType === "壞球" && aiSwing) {
                     logMsg += "🎯 成功引誘！AI 追打壞球落空，記一好球！";
                     document.getElementById('game-log').innerText = logMsg;
-                    playSound("Strike!");
+                    playSound("好球");
                     handleStrike();
                     unlockActionZone();
                 } else if (pitchType === "好球" && aiSwing) {
@@ -658,10 +657,10 @@ function playSound(content) {
                     
                     // 💡 AI 擊球結果語音對應
                     let resultText = aiHit.type;
-                    if (resultText.includes("全壘打")) playSound("Home run!");
-                    else if (resultText.includes("安打")) playSound("Base hit!");
-                    else if (resultText.includes("界外")) playSound("Foul ball!");
-                    else playSound("Out!");
+                    if (resultText.includes("全壘打")) playSound("全壘打");
+                    else if (resultText.includes("安打")) playSound("安打");
+                    else if (resultText.includes("界外")) playSound("界外");
+                    else playSound("出局");
 
                     animateBall(loc.home.x, loc.home.y, aiHit.target.x, aiHit.target.y, 7, () => {
                         processBattedBall(aiHit.type, true);
@@ -684,12 +683,12 @@ function playSound(content) {
                     if (aiPitch === "好球") {
                         logMsg += "你站著沒動，眼睜睜看球進帶，一好球！";
                         document.getElementById('game-log').innerText = logMsg;
-                        playSound("Strike!");
+                        playSound("好球");
                         handleStrike();
                     } else {
                         logMsg += "選球精準！成功放過壞球，一壞球。";
                         document.getElementById('game-log').innerText = logMsg;
-                        playSound("Ball!");
+                        playSound("壞球");
                         handleBall();
                     }
                     unlockActionZone();
@@ -697,13 +696,13 @@ function playSound(content) {
                     if (aiPitch === "壞球") {
                         logMsg += "慘了！你被外角壞球釣到，大空棒一好球！";
                         document.getElementById('game-log').innerText = logMsg;
-                        playSound("Strike!");
+                        playSound("好球");
                         handleStrike();
                         unlockActionZone();
                     } else {
                         logMsg += "確實擊中球！快翻牌決定這次的命運！";
                         document.getElementById('game-log').innerText = logMsg;
-                        playSound("Base hit!");
+                        playSound("安打");
                         document.getElementById('interactive-area').className = "cards-row"; 
                         triggerPlayerHitFlipingStage();
                     }
