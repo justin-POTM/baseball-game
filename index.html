@@ -506,29 +506,41 @@ function playBaseballManVoice(text) {
         }
 
 function playSound(content) {
+    // 強制停止語音引擎，避免干擾
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
 
     let url = "";
+    let volume = 0.5; // 預設音量
     let t = content.trim();
 
-    // 紀錄一下到底收到什麼內容
-    console.log("現在播放的內容是: " + t);
+    // 🎯 這裡可以個別調整每個音效的檔案與音量
+    if (t === "好球") {
+        url = "strike.mp3";
+        volume = 0.4;
+    } else if (t === "壞球") {
+        url = "balls.mp3";
+        volume = 0.4;
+    } else if (t === "全壘打") {
+        url = "homerun.mp3";
+        volume = 0.8;
+    } else if (t === "安打") {
+        url = "hit.mp3";
+        volume = 0.6;
+    } else if (t === "界外") {
+        url = "foulball.mp3";
+        volume = 0.5;
+    } else if (t === "出局") {
+        url = "out.mp3";
+        volume = 0.5;
+    }
 
-    if (t === "好球") url = "strike.mp3";
-    else if (t === "壞球") url = "balls.mp3";
-    else if (t === "全壘打") url = "homerun.mp3";
-    else if (t === "安打") url = "hit.mp3"; // 簡化判定，先求有
-    else if (t === "界外") url = "foulball.mp3";
-    else if (t === "出局") url = "out.mp3";
-
-    // 關鍵除錯點
+    // 播放邏輯
     if (url !== "") {
-        console.log("準備播放檔案: " + url);
         let audio = new Audio(url);
-        audio.volume = 1.0;
-        audio.play().catch(e => console.log("播放失敗: ", e));
-    } else {
-        console.warn("警告：沒有匹配到對應的音效檔案，內容為: " + t);
+        audio.volume = volume; // 套用上面設定的個別音量
+        audio.play().catch(e => {
+            // 靜默處理，避免遊戲因播放錯誤而卡死
+        });
     }
 }
 
