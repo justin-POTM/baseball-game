@@ -70,30 +70,33 @@
     <div class="game-wrapper">
         <h1>⚾ Baseball Battle ⚾</h1>
 
-        <table class="scoreboard">
-            <thead>
-                <tr>
-                    <th width="140">球隊</th>
-                    <th id="i1">1</th><th id="th-i2">2</th><th id="th-i3">3</th><th id="th-i4">4</th><th id="th-i5">5</th>
-                    <th id="th-i6">6</th><th id="th-i7">7</th><th id="th-i8">8</th><th id="th-i9">9</th>
-                    <th width="50">R</th><th width="50">H</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td style="color: #3498db; font-weight: bold;">客隊 (AI)</td>
-                    <td id="a1">-</td><td id="a2">-</td><td id="a3">-</td><td id="a4">-</td><td id="a5">-</td>
-                    <td id="a6">-</td><td id="a7">-</td><td id="a8">-</td><td id="a9">-</td>
-                    <td id="away-R" style="color: #fff;">0</td><td id="away-H" style="color: #fff;">0</td>
-                </tr>
-                <tr style="background: #151515;">
-                    <td style="color: #2ecc71; font-weight: bold;">主隊 (玩家)</td>
-                    <td id="h1">-</td><td id="h2">-</td><td id="h3">-</td><td id="h4">-</td><td id="h5">-</td>
-                    <td id="h6">-</td><td id="h7">-</td><td id="h8">-</td><td id="h9">-</td>
-                    <td id="home-R" style="color: #fff;">0</td><td id="home-H" style="color: #fff;">0</td>
-                </tr>
-            </tbody>
-        </table>
+<table class="scoreboard">
+    <thead>
+        <tr>
+            <th width="140">球隊</th>
+            <th id="i1">1</th><th id="th-i2">2</th><th id="th-i3">3</th><th id="th-i4">4</th><th id="th-i5">5</th>
+            <th id="th-i6">6</th><th id="th-i7">7</th><th id="th-i8">8</th><th id="th-i9">9</th>
+            <th id="th-i10">10</th><th id="th-i11">11</th><th id="th-i12">12</th>
+            <th width="50">R</th><th width="50">H</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td style="color: #3498db; font-weight: bold;">客隊 (AI)</td>
+            <td id="a1">-</td><td id="a2">-</td><td id="a3">-</td><td id="a4">-</td><td id="a5">-</td>
+            <td id="a6">-</td><td id="a7">-</td><td id="a8">-</td><td id="a9">-</td>
+            <td id="a10">-</td><td id="a11">-</td><td id="a12">-</td>
+            <td id="away-R" style="color: #fff;">0</td><td id="away-H" style="color: #fff;">0</td>
+        </tr>
+        <tr style="background: #151515;">
+            <td style="color: #2ecc71; font-weight: bold;">主隊 (玩家)</td>
+            <td id="h1">-</td><td id="h2">-</td><td id="h3">-</td><td id="h4">-</td><td id="h5">-</td>
+            <td id="h6">-</td><td id="h7">-</td><td id="h8">-</td><td id="h9">-</td>
+            <td id="h10">-</td><td id="h11">-</td><td id="h12">-</td>
+            <td id="home-R" style="color: #fff;">0</td><td id="home-H" style="color: #fff;">0</td>
+        </tr>
+    </tbody>
+</table>
 
         <div class="game-layout">
             <div class="bso-panel">
@@ -514,7 +517,7 @@
             });
         }
 
-        function updateUI() {
+function updateUI() {
             for(let i=1; i<=3; i++) {
                 const bElem = document.getElementById(`b${i}`);
                 if (bElem) bElem.className = i <= gameState.balls ? 'dot ball' : 'dot';
@@ -531,16 +534,30 @@
             document.getElementById('game-status-text').innerText = gameState.gameOver ? "比賽結束" : `第 ${gameState.inning} 局 ${halfText} • ${gameState.outs} 出局`;
 
             let totalAway = 0, totalHome = 0;
-            for(let i=1; i<=9; i++) {
-                const aVal = gameState.scoreAway[i-1];
-                document.getElementById(`a${i}`).innerText = aVal === null ? '-' : aVal;
-                if(aVal !== null) totalAway += aVal;
+            // 支援延長賽 1~12 局的記分板更新
+            for(let i=1; i<=12; i++) {
+                const aElem = document.getElementById(`a${i}`);
+                const hElem = document.getElementById(`h${i}`);
                 
-                const hVal = gameState.scoreHome[i-1];
-                document.getElementById(`h${i}`).innerText = hVal === null ? '-' : hVal;
-                if(hVal !== null) totalHome += hVal;
+                if (aElem) {
+                    const aVal = gameState.scoreAway[i-1];
+                    aElem.innerText = aVal === null ? '-' : aVal;
+                    if(aVal !== null) totalAway += aVal;
+                }
+                
+                if (hElem) {
+                    const hVal = gameState.scoreHome[i-1];
+                    
+                    // 如果這局觸發了再見勝利 (gameState.isWalkOff)，分數後面補上 "X"
+                    if (hVal !== null && i === gameState.inning && gameState.isWalkOff) {
+                        hElem.innerText = hVal + "X";
+                    } else {
+                        hElem.innerText = hVal === null ? '-' : hVal;
+                    }
+                    if(hVal !== null) totalHome += hVal;
+                }
 
-                const thElem = document.getElementById(i === 1 ? 'i1' : `th-i2`).parentElement.children[i];
+                const thElem = document.getElementById(i === 1 ? 'i1' : `th-i${i}`)?.parentElement?.children[i];
                 if (thElem) thElem.className = (i === gameState.inning && !gameState.gameOver) ? 'active-inning' : '';
             }
             
@@ -548,8 +565,30 @@
             document.getElementById('home-R').innerText = totalHome;
             document.getElementById('away-H').innerText = gameState.hitsAway;
             document.getElementById('home-H').innerText = gameState.hitsHome;
-        }
 
+            // 💡 修正：已對齊你實際的按鈕 ID 'next-half-btn'
+            const nextBtn = document.getElementById('next-half-btn'); 
+            if (nextBtn) {
+                if (gameState.outs >= 3 || gameState.gameOver || gameState.isWalkOff) {
+                    // 判斷是否滿足比賽結束條件
+                    const cond9TopWin = (gameState.inning === 9 && gameState.isTop && totalHome > totalAway);
+                    const cond9BottomEnd = (gameState.inning >= 9 && !gameState.isTop && totalHome !== totalAway);
+                    const cond12End = (gameState.inning === 12 && !gameState.isTop);
+                    
+                    if (cond9TopWin || cond9BottomEnd || cond12End || gameState.gameOver || gameState.isWalkOff) {
+                        nextBtn.innerText = "🏁 比賽結束看結果";
+                        nextBtn.style.backgroundColor = "#e74c3c"; // 變成紅色醒目按鈕
+                    } else {
+                        nextBtn.innerText = "👉 進入下個半局";
+                        nextBtn.style.backgroundColor = ""; // 恢復原本顏色
+                    }
+                } else {
+                    nextBtn.innerText = "👉 進入下個半局";
+                    nextBtn.style.backgroundColor = "";
+                }
+            }
+        }
+        
         function handleStrike() {
             gameState.strikes++;
             if (gameState.strikes >= 3) {
@@ -687,32 +726,80 @@ function processBattedBall(result, isAICheck) {
     updateUI();
 }
 
-        function checkInningStatus() {
-            if (gameState.outs >= 3) {
+function checkInningStatus() {
+            if (gameState.outs >= 3 || gameState.isWalkOff) {
                 document.getElementById('interactive-area').innerHTML = "";
                 document.getElementById('next-half-btn').style.display = "inline-block";
-                document.getElementById('next-half-btn').innerText = gameState.isTop ? "三人出局！換玩家進攻打擊" : "三人出局！進入下一局";
+                
+                // 💡 計算分數確認是否為最後一局完賽
+                let totalAway = gameState.scoreAway.reduce((a, b) => (a||0) + (b||0), 0);
+                let totalHome = gameState.scoreHome.reduce((a, b) => (a||0) + (b||0), 0);
+                
+                const cond9TopWin = (gameState.inning === 9 && gameState.isTop && totalHome > totalAway);
+                const cond9BottomEnd = (gameState.inning >= 9 && !gameState.isTop && totalHome !== totalAway);
+                const cond12End = (gameState.inning === 12 && !gameState.isTop);
+
+                if (cond9TopWin || cond9BottomEnd || cond12End || gameState.isWalkOff) {
+                    document.getElementById('next-half-btn').innerText = "🏁 點擊查看比賽結果";
+                } else {
+                    document.getElementById('next-half-btn').innerText = gameState.isTop ? "三人出局！換玩家進攻打擊" : "三人出局！進入下一局";
+                }
             }
         }
 
         function startNextHalf() {
+            // 先計算目前總分，供後續判定使用
+            let totalAway = gameState.scoreAway.reduce((a, b) => (a||0) + (b||0), 0);
+            let totalHome = gameState.scoreHome.reduce((a, b) => (a||0) + (b||0), 0);
+
+            // 💡 檢查是否已經觸發再見勝利，或者是滿足其他完賽條件
+            const cond9TopWin = (gameState.inning === 9 && gameState.isTop && totalHome > totalAway);
+            const cond9BottomEnd = (gameState.inning >= 9 && !gameState.isTop && totalHome !== totalAway);
+            const cond12End = (gameState.inning === 12 && !gameState.isTop);
+
+            if (gameState.isWalkOff || cond9TopWin || cond9BottomEnd || cond12End) {
+                endGame();
+                return;
+            }
+
             document.getElementById('next-half-btn').style.display = "none";
-            gameState.bases = [false, false, false];
+            
+            // 💡 判斷下一局/半局是否需要採用突破僵局制 (10局起二壘有人)
+            let nextInning = gameState.inning;
+            let nextIsTop = !gameState.isTop;
+            if (!gameState.isTop) {
+                nextInning++; // 如果是下半局結束，局數要加 1
+            }
+
+            if (nextInning >= 10) {
+                gameState.bases = [false, true, false]; // 突破僵局制：二壘有人
+            } else {
+                gameState.bases = [false, false, false]; // 正常開局壘包全空
+            }
+            
             gameState.outs = 0; gameState.balls = 0; gameState.strikes = 0;
 
             if (gameState.isTop) {
+                // ---- 【上半局結束，準備進入下半局】 ----
                 gameState.isTop = false;
-                gameState.scoreHome[gameState.inning-1] = 0;
-                document.getElementById('game-log').innerText = `第 ${gameState.inning} 局下半，戴上打擊頭盔，看清 AI 的球路！`;
-            } else {
-                if (gameState.inning >= 9) { endGame(); return; } 
-                else {
-                    gameState.inning++;
-                    gameState.isTop = true;
-                    gameState.scoreAway[gameState.inning-1] = 0;
-                    document.getElementById('game-log').innerText = `進入第 ${gameState.inning} 局上半！站上投手丘全力防守。`;
+                if (gameState.scoreHome[gameState.inning-1] === null) {
+                    gameState.scoreHome[gameState.inning-1] = 0;
                 }
+                
+                let tieBreakText = gameState.inning >= 10 ? "（⚠️ 突破僵局制，二壘有人！）" : "";
+                document.getElementById('game-log').innerText = `第 ${gameState.inning} 局下半${tieBreakText}，戴上打擊頭盔，看清 AI 的球路！`;
+            } else {
+                // ---- 【下半局結束，準備進入下一局上半】 ----
+                gameState.inning++;
+                gameState.isTop = true;
+                if (gameState.scoreAway[gameState.inning-1] === null) {
+                    gameState.scoreAway[gameState.inning-1] = 0;
+                }
+                
+                let tieBreakText = gameState.inning >= 10 ? "（⚠️ 突破僵局制，二壘有人！）" : "";
+                document.getElementById('game-log').innerText = `進入第 ${gameState.inning} 局上半${tieBreakText}！站上投手丘全力防守。`;
             }
+            
             renderControlPanel();
             drawField();
             updateUI();
@@ -727,7 +814,19 @@ function processBattedBall(result, isAICheck) {
             let avgHome = gameState.abHome > 0 ? (gameState.hitsHome / gameState.abHome).toFixed(3) : ".000";
             let avgAway = gameState.abAway > 0 ? (gameState.hitsAway / gameState.abAway).toFixed(3) : ".000";
 
-            let resultText = totalHome > totalAway ? `🏁 終場結束！玩家以 ${totalHome}-${totalAway} 贏得勝利！🏆` : (totalAway > totalHome ? `🏁 終場結束！AI 以 ${totalAway}-${totalHome} 險勝。😭` : `🏁 延長戰平手 (${totalHome}-${totalAway})！🤝`);
+            // 判斷最後顯示的勝負標題
+            let resultText = "";
+            if (totalHome > totalAway) {
+                if (gameState.isWalkOff) {
+                    resultText = `🏁 終場結束！玩家擊出再見得分，以 ${totalHome}X-${totalAway} 贏得勝利！🏆`;
+                } else {
+                    resultText = `🏁 終場結束！玩家以 ${totalHome}-${totalAway} 贏得勝利！🏆`;
+                }
+            } else if (totalAway > totalHome) {
+                resultText = `🏁 終場結束！AI 以 ${totalAway}-${totalHome} 險勝。😭`;
+            } else {
+                resultText = `🏁 終場結束！鏖戰 12 局未分勝負，兩隊以 ${totalHome}-${totalAway} 握手言和！🤝`;
+            }
             
             let statsHtml = `
                 <br><br>📊 <b>【本場真實數據統計】</b><br>
@@ -755,6 +854,8 @@ function processBattedBall(result, isAICheck) {
         function resetWholeGame() {
             document.getElementById('restart-game-btn').style.display = "none";
             initGameStateObject();
+            // 💡 記得重置再見狀態
+            gameState.isWalkOff = false; 
             drawField();
             renderControlPanel();
             updateUI();
@@ -763,6 +864,7 @@ function processBattedBall(result, isAICheck) {
 
         function initGame() {
             initGameStateObject();
+            gameState.isWalkOff = false;
             drawField();
             renderControlPanel();
             updateUI();
