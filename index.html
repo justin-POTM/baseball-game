@@ -219,18 +219,40 @@ function playBGM() {
     });
 }
 
-// 💡 讓網頁開口說英文的語音函式 (Web Speech API)
 function speakEnglish(text) {
-    // 先取消目前正在說的話，免得上一球還沒說完卡住
-    window.speechSynthesis.cancel();
-    
-    let utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US'; // ⭐️ 強制指定英文發音
-    utterance.rate = 1.1;     // 速度稍微快一點，比較有球賽的激情
-    utterance.pitch = 1.0;    // 音調
-    
-    window.speechSynthesis.speak(utterance);
-}
+            // 先強行取消之前還沒講完的話，免得音效堆疊延遲
+            window.speechSynthesis.cancel();
+            
+            let utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US'; // 強制美式英文
+            
+            // 💡 取得瀏覽器目前支援的所有語音清單
+            let voices = window.speechSynthesis.getVoices();
+            
+            // 💡 篩選出符合美式英文且傾向男聲的語音庫
+            let maleVoice = voices.find(voice => 
+                voice.lang.includes('en-US') && 
+                (voice.name.toLowerCase().includes('male') || 
+                 voice.name.toLowerCase().includes('google') || 
+                 voice.name.toLowerCase().includes('david')) &&
+                !voice.name.toLowerCase().includes('natural') // 避開可能預設偏女聲的 natural
+            );
+            
+            // 如果有找到適合的男聲，就套用它；沒有的話就用系統預設美式英文
+            if (maleVoice) {
+                utterance.voice = maleVoice;
+            }
+
+            utterance.rate = 1.15; // 語速微調，讓裁判喊起來更有張力
+            utterance.pitch = 0.9;  // 稍微降低音調 (0.5 ~ 2.0)，讓聲音聽起來更渾厚、更像成熟男裁判
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // 解決 Chrome/Safari 語音清單非同步載入的經典 bug，確保第一次播就有聲音
+        if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        }
         // --- Canvas 與核心幾何配置（45度完美對稱 1/4 圓結構） ---
         const canvas = document.getElementById("fieldCanvas");
         const ctx = canvas.getContext("2d");
