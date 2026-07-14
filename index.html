@@ -220,20 +220,20 @@ function playBGM() {
 }
 
 function playBaseballManVoice(text) {
+    let url = "";
     let t = text.trim();
-    let speakText = "";
 
-    // 🔍 1. 將你的中文變數精準對應到英文裁判宣告
+    // 嚴格對應你已上傳到 GitHub 根目錄的 6 個音檔
     if (t === "Strike!" || t === "好球") {
-        speakText = "Strike!";
+        url = "strike.mp3"; 
     } else if (t === "Ball!" || t === "壞球") {
-        speakText = "Ball!";
+        url = "balls.mp3";   
     } else if (t === "全壘打") {
-        speakText = "Home run!";
+        url = "homerun.mp3"; 
     } else if (t === "一壘安打" || t === "二壘安打" || t === "三壘安打" || t.includes("安打")) {
-        speakText = "Base hit!";
+        url = "hit.mp3";     
     } else if (t === "界外球") {
-        speakText = "Foul ball!";
+        url = "foulball.mp3"; 
     } else if (
         t === "滾地球出局" || 
         t === "高飛球接殺" || 
@@ -243,55 +243,18 @@ function playBaseballManVoice(text) {
         t.includes("接殺") || 
         t === "Out!"
     ) {
-        speakText = "Out!";
+        url = "out.mp3";     
     }
 
-    if (!speakText) return;
-
-    // 先強行取消之前還沒講完的話
-    window.speechSynthesis.cancel();
-
-    let utterance = new SpeechSynthesisUtterance(speakText);
-    utterance.lang = 'en-US'; // 強制美式英文
-    utterance.pitch = 0.8;    // 稍微壓低音調，聽起來更沉穩
-    utterance.rate = 0.95;    // 語速稍微放慢
-
-    // ⚡ 核心黑科技：強迫瀏覽器在發音清單裡搜尋「英文男聲」
-    // 瀏覽器雲端有一套極為逼真的 Google/Microsoft Natural Male 聲音
-    let voices = window.speechSynthesis.getVoices();
-    
-    // 篩選出包含 'male'、'david'、'mark'、'guy'、'natural' 等英文男聲關鍵字的語音
-    let maleVoice = voices.find(voice => 
-        voice.lang.startsWith('en') && 
-        (
-            voice.name.toLowerCase().includes('male') || 
-            voice.name.toLowerCase().includes('david') || 
-            voice.name.toLowerCase().includes('mark') || 
-            voice.name.toLowerCase().includes('guy') || 
-            voice.name.toLowerCase().includes('natural')
-        )
-    );
-
-    // 如果找到了官方的優質男聲，就強制套用
-    if (maleVoice) {
-        utterance.voice = maleVoice;
-        console.log("成功啟用雲端高品質男聲發音：", maleVoice.name);
-    } else {
-        // 防呆：如果真的找不到男聲，至少找一個非預設的英文聲音
-        let anyEnglishVoice = voices.find(voice => voice.lang.startsWith('en'));
-        if (anyEnglishVoice) {
-            utterance.voice = anyEnglishVoice;
-        }
+    // 播放音效
+    if (url) {
+        let audio = new Audio(url);
+        audio.volume = 1.0; 
+        // 使用 .play() 並處理潛在的自動播放錯誤
+        audio.play().catch(e => {
+            console.log("音效需要點擊畫面才能觸發：", e);
+        });
     }
-
-    window.speechSynthesis.speak(utterance);
-}
-
-// 💡 解決瀏覽器非同步載入語音清單的問題（非常重要！）
-if (typeof window !== 'undefined' && window.speechSynthesis) {
-    window.speechSynthesis.onvoiceschanged = function() {
-        console.log("瀏覽器語音清單已加載，男聲引擎準備就緒。");
-    };
 }
         
         // --- Canvas 與核心幾何配置（45度完美對稱 1/4 圓結構） ---
