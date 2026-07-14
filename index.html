@@ -135,6 +135,17 @@
 
             .btn-action { width: 100% !important; box-sizing: border-box; }
         }
+    /* 🛡️ 防護罩：確保記分板在手機上可以正常捲動，不受強制並排影響 */
+@media (max-width: 768px) {
+    .table-container, .scoreboard {
+        display: block !important;       /* 取消並排，讓它恢復正常流動 */
+        width: 100% !important;          /* 寬度適應 */
+        flex: none !important;           /* 取消任何 flex 影響 */
+        position: relative !important;   /* 確保它不是固定定位 */
+        overflow-x: auto !important;     /* 允許記分板在手機上左右滑動 */
+        margin: 10px 0 !important;       /* 恢復正常間距 */
+    }
+}
     </style>
 </head>
 <body>
@@ -522,7 +533,7 @@ function playSound(content) {
         volume = 0.4;
     } else if (t === "全壘打") {
         url = "homerun.mp3";
-        volume = 0.6;
+        volume = 0.5;
     } else if (t === "安打") {
         url = "hit.mp3";
         volume = 0.6;
