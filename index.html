@@ -220,48 +220,19 @@ function playBGM() {
 }
 
 function speakEnglish(text) {
-            window.speechSynthesis.cancel(); // 先取消前一球
+            // 先強行取消之前還沒講完的話
+            window.speechSynthesis.cancel();
             
             let utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US';
+            utterance.lang = 'en-US'; // 強制美式英文
             
-            // 💡 撈出目前裝置內建的所有語音清單
-            let voices = window.speechSynthesis.getVoices();
-            
-            // 💡 建立男聲優先順序關鍵字清單（包含常見的 Windows, Mac, Google 男聲）
-            let maleKeywords = ['david', 'mark', 'ravi', 'male', 'google us english', 'microsoft'];
-            let selectedVoice = null;
-
-            // 💡 用關鍵字去比對，抓出真正的英文男聲
-            for (let kw of maleKeywords) {
-                selectedVoice = voices.find(v => v.lang.includes('en-US') && v.name.toLowerCase().includes(kw));
-                if (selectedVoice) break; // 只要找到了就立刻跳出
-            }
-
-            // 如果真的不幸完全找不到男聲關鍵字，就抓第一個美式英文語音
-            if (!selectedVoice) {
-                selectedVoice = voices.find(v => v.lang.includes('en-US'));
-            }
-
-            // 💡 成功鎖定男聲！
-            if (selectedVoice) {
-                utterance.voice = selectedVoice;
-                console.log("成功鎖定裁判語音：", selectedVoice.name); // 你可以在瀏覽器 F12 檢查抓到誰
-            }
-
-            // 調整到最適合男裁判的渾厚語氣
-            utterance.rate = 1.15; 
-            utterance.pitch = 0.85; 
+            // 💡 終極地獄變聲設定：
+            // 音調拉到最極限的低頻（0.5是絕大多數瀏覽器的極限低音）
+            utterance.pitch = 0.5;   
+            // 語速一定要放慢，拉長聲帶震動的頻率，女聲的高音才不會露餡
+            utterance.rate = 0.85;   
 
             window.speechSynthesis.speak(utterance);
-        }
-
-        // ⚠️ 關鍵核心：因為 Chrome/Safari 的語音清單是「非同步載入」
-        // 必須加上這個監聽器，否則網頁一剛打開時 getVoices() 會是空的，導致抓不到男聲！
-        if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = function() {
-                window.speechSynthesis.getVoices();
-            };
         }
         // --- Canvas 與核心幾何配置（45度完美對稱 1/4 圓結構） ---
         const canvas = document.getElementById("fieldCanvas");
