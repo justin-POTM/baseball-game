@@ -581,89 +581,111 @@
             updateUI();
         }
 
-        function processBattedBall(result, isAICheck) {
-            let runs = 0;
-            if (gameState.isTop && gameState.scoreAway[gameState.inning-1] === null) gameState.scoreAway[gameState.inning-1] = 0;
-            if (!gameState.isTop && gameState.scoreHome[gameState.inning-1] === null) gameState.scoreHome[gameState.inning-1] = 0;
+function processBattedBall(result, isAICheck) {
+    let runs = 0;
+    if (gameState.isTop && gameState.scoreAway[gameState.inning-1] === null) gameState.scoreAway[gameState.inning-1] = 0;
+    if (!gameState.isTop && gameState.scoreHome[gameState.inning-1] === null) gameState.scoreHome[gameState.inning-1] = 0;
 
-            const currentStats = isAICheck ? gameState.stats.away : gameState.stats.home;
+    const currentStats = isAICheck ? gameState.stats.away : gameState.stats.home;
 
-            if (result === "界外球") {
-                if (gameState.strikes < 2) gameState.strikes++;
-            } else if (result === "滾地球出局" || result === "飛球接殺" || result === "平飛球接殺") {
-                gameState.outs++;
-                if(isAICheck) gameState.abAway++; else gameState.abHome++; 
-                gameState.balls = 0; gameState.strikes = 0;
-            } else if (result === "雙殺打") {
-                gameState.outs++; 
-                if(isAICheck) { gameState.abAway++; } else { gameState.abHome++; }
+    // == 1. 界外球 ==
+    if (result === "界外球") {
+        if (gameState.strikes < 2) gameState.strikes++;
+        drawField();
+        updateUI();
+        return; // 直接結束，絕不上壘
+    } 
+    
+    // == 2. 普通出局 ==
+    if (result === "滾地球出局" || result === "飛球接殺" || result === "平飛球接殺") {
+        gameState.outs++;
+        if(isAICheck) gameState.abAway++; else gameState.abHome++; 
+        gameState.balls = 0; gameState.strikes = 0;
+        drawField();
+        updateUI();
+        return; // 關鍵：出局直接結束，絕對不走下面的安打上壘邏輯
+    } 
+    
+    // == 3. 雙殺打 ==
+    if (result === "雙殺打") {
+        gameState.outs++; 
+        if(isAICheck) { gameState.abAway++; } else { gameState.abHome++; }
 
-                const has1B = gameState.bases[0];
-                const has2B = gameState.bases[1];
-                const has3B = gameState.bases[2];
+        const has1B = gameState.bases[0];
+        const has2B = gameState.bases[1];
+        const has3B = gameState.bases[2];
 
-                if (gameState.outs < 3) {
-                    if (has1B && has2B && has3B) {
-                        gameState.outs++; gameState.bases = [false, true, true];
-                        document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺本壘跑者與打者，二三壘有人！)";
-                    } else if (has1B && has2B && !has3B) {
-                        gameState.outs++; gameState.bases = [false, false, true];
-                        document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺二壘跑者與打者，三壘有人！)";
-                    } else if (has1B && !has2B && has3B) {
-                        gameState.outs++; gameState.bases = [false, true, false];
-                        document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺本壘跑者與打者，二壘有人！)";
-                    } else if (!has1B && has2B && has3B) {
-                        gameState.outs++; gameState.bases = [false, false, true];
-                        document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺本壘跑者與打者，二壘跑者上三壘！)";
-                    } else if (has1B && !has2B && !has3B) {
-                        gameState.outs++; gameState.bases = [false, false, false];
-                        document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺一壘跑者與打者，壘包全空！)";
-                    } else if (!has1B && has2B && !has3B) {
-                        gameState.outs++; gameState.bases = [false, false, false];
-                        document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺二壘跑者與打者，壘包全空！)";
-                    } else if (!has1B && !has2B && has3B) {
-                        gameState.outs++; gameState.bases = [false, false, false];
-                        document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺三壘跑者與打者，壘包全空！)";
-                    } else {
-                        document.getElementById('game-log').innerText += " (內野滾地球，打者出局。)";
-                    }
-                } else {
-                    document.getElementById('game-log').innerText += " (內野滾地球，打者出局，三人出局！)";
-                }
-                gameState.balls = 0; gameState.strikes = 0;
-            } else if (result === "全壘打") {
-                currentStats.hr++;
-                if(isAICheck) { gameState.hitsAway++; gameState.abAway++; } else { gameState.hitsHome++; gameState.abHome++; }
-                runs = (gameState.bases[0]?1:0) + (gameState.bases[1]?1:0) + (gameState.bases[2]?1:0) + 1;
-                gameState.bases = [false, false, false];
-                gameState.balls = 0; gameState.strikes = 0;
+        if (gameState.outs < 3) {
+            if (has1B && has2B && has3B) {
+                gameState.outs++; gameState.bases = [false, true, true];
+                document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺本壘跑者與打者，二三壘有人！)";
+            } else if (has1B && has2B && !has3B) {
+                gameState.outs++; gameState.bases = [false, false, true];
+                document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺二壘跑者與打者，三壘有人！)";
+            } else if (has1B && !has2B && has3B) {
+                gameState.outs++; gameState.bases = [false, true, false];
+                document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺本壘跑者與打者，二壘有人！)";
+            } else if (!has1B && has2B && has3B) {
+                gameState.outs++; gameState.bases = [false, false, true];
+                document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺本壘跑者與打者，二壘跑者上三壘！)";
+            } else if (has1B && !has2B && !has3B) {
+                gameState.outs++; gameState.bases = [false, false, false];
+                document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺一壘跑者與打者，壘包全空！)";
+            } else if (!has1B && has2B && !has3B) {
+                gameState.outs++; gameState.bases = [false, false, false];
+                document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺二壘跑者與打者，壘包全空！)";
+            } else if (!has1B && !has2B && has3B) {
+                gameState.outs++; gameState.bases = [false, false, false];
+                document.getElementById('game-log').innerText += " (⚡ 雙殺打！封殺三壘跑者與打者，壘包全空！)";
             } else {
-                let numBases = 1;
-                if(result === "二壘安打") { numBases = 2; currentStats.double++; }
-                if(result === "三壘安打") { numBases = 3; currentStats.triple++; }
-
-                if(isAICheck) { gameState.hitsAway++; gameState.abAway++; } else { gameState.hitsHome++; gameState.abHome++; }
-
-                let currentBases = [...gameState.bases];
-                for (let b = 0; b < numBases; b++) {
-                    if (currentBases[2]) { runs++; }
-                    currentBases[2] = currentBases[1]; 
-                    currentBases[1] = currentBases[0]; 
-                    currentBases[0] = false;            
-                }
-                currentBases[numBases - 1] = true;
-
-                gameState.bases = currentBases;
-                gameState.balls = 0; gameState.strikes = 0;
+                document.getElementById('game-log').innerText += " (內野滾地球，打者出局。)";
             }
-
-            if (runs > 0) {
-                if (isAICheck) gameState.scoreAway[gameState.inning-1] += runs;
-                else gameState.scoreHome[gameState.inning-1] += runs;
-            }
-            drawField();
-            updateUI();
+        } else {
+            document.getElementById('game-log').innerText += " (內野滾地球，打者出局，三人出局！)";
         }
+        gameState.balls = 0; gameState.strikes = 0;
+        drawField();
+        updateUI();
+        return; // 雙殺打結束
+    } 
+    
+    // == 4. 全壘打 ==
+    if (result === "全壘打") {
+        currentStats.hr++;
+        if(isAICheck) { gameState.hitsAway++; gameState.abAway++; } else { gameState.hitsHome++; gameState.abHome++; }
+        runs = (gameState.bases[0]?1:0) + (gameState.bases[1]?1:0) + (gameState.bases[2]?1:0) + 1;
+        gameState.bases = [false, false, false];
+        gameState.balls = 0; gameState.strikes = 0;
+    } 
+    
+    // == 5. 嚴格定義的安打上壘邏輯 ==
+    else if (result === "一壘安打" || result === "二壘安打" || result === "三壘安打") {
+        let numBases = 1;
+        if(result === "二壘安打") { numBases = 2; currentStats.double++; }
+        if(result === "三壘安打") { numBases = 3; currentStats.triple++; }
+
+        if(isAICheck) { gameState.hitsAway++; gameState.abAway++; } else { gameState.hitsHome++; gameState.abHome++; }
+
+        let currentBases = [...gameState.bases];
+        for (let b = 0; b < numBases; b++) {
+            if (currentBases[2]) { runs++; }
+            currentBases[2] = currentBases[1]; 
+            currentBases[1] = currentBases[0]; 
+            currentBases[0] = false;            
+        }
+        currentBases[numBases - 1] = true; // 只有這三個安打結果可以上壘！
+        gameState.bases = currentBases;
+        gameState.balls = 0; gameState.strikes = 0;
+    }
+
+    // == 6. 得分結算與 UI 更新 ==
+    if (runs > 0) {
+        if (isAICheck) gameState.scoreAway[gameState.inning-1] += runs;
+        else gameState.scoreHome[gameState.inning-1] += runs;
+    }
+    drawField();
+    updateUI();
+}
 
         function checkInningStatus() {
             if (gameState.outs >= 3) {
