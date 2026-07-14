@@ -505,16 +505,47 @@ function playBaseballManVoice(text) {
             }
         }
 
-        function speakEnglish(text) {
-            // 先強行取消之前還沒講完的話，免得音效堆疊延遲
-            window.speechSynthesis.cancel();
-            
-            let utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'en-US'; // ⭐️ 強制美式英文發音
-            utterance.rate = 1.2;     // 語速稍微加快，更有球賽激昂感
-            utterance.pitch = 1.0;    // 音調
-            window.speechSynthesis.speak(utterance);
-        }
+// ==========================================
+// 🎵 1. 真人音效播放器（精確中文對應版）
+// ==========================================
+function playSound(content) {
+    // 強制關閉任何可能殘留的電子語音引擎
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+    }
+
+    let url = "";
+    let t = 內容.trim();
+
+    // 🎯 確保每一種情況都有對應的檔案
+    if (t === "好球") {
+        url = "strike.mp3";
+    } else if (t === "壞球") {
+        url = "balls.mp3";
+    } else if (t === "全壘打") {
+        url = "homerun.mp3";
+    } else if (t === "一壘安打" || t === "二壘安打" || t === "三壘安打" || t === "安打") {
+        url = "hit.mp3";
+    } else if (t === "界外球") {
+        url = "foulball.mp3";
+    } else if (t === "擊中球") {
+        url = "hit.mp3"; // 擊中球播放擊球聲
+    } else if (
+        t === "滾地球出局" || 
+        t === "高飛球接殺" || 
+        t === "平飛球接殺" || 
+        t === "雙殺打" 
+    ) {
+        url = "out.mp3"; // 這些狀況統一播放裁判出局聲
+    }
+
+    // 播放音效
+    if (url !== "") {
+        let audio = new Audio(url);
+        audio.volume = 1.0;
+        audio.play().catch(e => console.log("音效播放失敗：", e));
+    }
+}
 
         // ==========================================
         // ⚾ 2. 你原本的遊戲邏輯功能（已完美植入語音）
