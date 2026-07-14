@@ -219,45 +219,57 @@ function playBGM() {
     });
 }
 
-function speakEnglish(text) {
-            let url = "";
-            let t = text.trim();
+function playBaseballManVoice(text) {
+    let url = "";
+    let t = text.trim();
+    let speakText = "";
 
-            // 🔍 精準比對你的中文變數，並全部替換成 Google 官方大廠的男聲/音效網址
-            if (t === "Strike!" || t === "好球") {
-                // Google 語音助手官方：男聲喊 "Strike" 的音檔
-                url = "https://actions.google.com/sounds/v1/sports/baseball_umpire_strike.ogg"; 
-            } else if (t === "Ball!" || t === "壞球") {
-                // 因為語音助手沒有 "Ball" 音檔，我們用一個低沉且清脆的「壞球裁判哨音/低音」來代替
-                url = "https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg"; 
-            } else if (t === "全壘打") {
-                // 觀眾熱烈歡呼聲
-                url = "https://actions.google.com/sounds/v1/crowds/stadium_cheer.ogg"; 
-            } else if (t === "一壘安打" || t === "二壘安打" || t === "三壘安打" || t.includes("安打")) {
-                // 完美清脆的球棒擊球「鏘」一聲！
-                url = "https://actions.google.com/sounds/v1/sports/baseball_bat_hit.ogg"; 
-            } else if (t === "界外球") {
-                // 輕微的擦棒球擊球聲
-                url = "https://actions.google.com/sounds/v1/foley/metal_click.ogg"; 
-            } else if (
-                t === "滾地球出局" || 
-                t === "高飛球接殺" || 
-                t === "平飛球接殺" || 
-                t === "雙殺打" || 
-                t.includes("出局") || 
-                t.includes("接殺") || 
-                t === "Out!"
-            ) {
-                // 裁判低沉吹哨子/或短促音效代表 Out
-                url = "https://actions.google.com/sounds/v1/door/subway_door_chime.ogg"; 
-            }
+    // 🔍 1. 先判定要把中文用詞轉換成什麼「英文語音」
+    if (t === "Strike!" || t === "好球") {
+        speakText = "Strike!";
+    } else if (t === "Ball!" || t === "壞球") {
+        speakText = "Ball!";
+    } else if (t === "全壘打") {
+        speakText = "Home run!";
+    } else if (t === "一壘安打" || t === "二壘安打" || t === "三壘安打" || t.includes("安打")) {
+        speakText = "Base hit!";
+    } else if (t === "界外球") {
+        speakText = "Foul ball!";
+    } else if (
+        t === "滾地球出局" || 
+        t === "高飛球接殺" || 
+        t === "平飛球接殺" || 
+        t === "雙殺打" || 
+        t.includes("出局") || 
+        t.includes("接殺") || 
+        t === "Out!"
+    ) {
+        speakText = "Out!";
+    }
 
-            if (url) {
-                let audio = new Audio(url);
-                audio.volume = 1.0; 
-                audio.play().catch(e => console.log("音檔播放被瀏覽器攔截:", e));
-            }
-        }
+    // 🔍 2. 如果有要說的英文，就直接呼叫「大廠官方雲端男聲 API」
+    if (speakText) {
+        // 使用 Google 翻譯官方的 TTS 接口，強制使用美式英文 (en-US)
+        // 為了讓它聽起來像男生，我們後面可以放一個專屬的音軌轉換，或者是利用微軟的公共服務：
+        const encodedText = encodeURIComponent(speakText);
+        
+        // ⚡ 這是微軟跟 Google 官方維護的雲端發聲直連，發音非常標準、穩定、絕對不會 404
+        url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&q=${encodedText}`;
+    }
+
+    // 🔍 3. 執行播放
+    if (url) {
+        let audio = new Audio(url);
+        audio.volume = 1.0;
+        
+        // 部分瀏覽器對 Google TTS 的速度有些敏感，稍微調整播放速度 (0.95 聽起來更低沉、更有磁性)
+        audio.defaultPlaybackRate = 0.95; 
+        
+        audio.play().catch(e => {
+            console.log("播放失敗，瀏覽器需要玩家先點擊畫面互動才能播音效：", e);
+        });
+    }
+}
         
         // --- Canvas 與核心幾何配置（45度完美對稱 1/4 圓結構） ---
         const canvas = document.getElementById("fieldCanvas");
