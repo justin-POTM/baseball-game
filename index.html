@@ -514,29 +514,29 @@ function playSound(content) {
         window.speechSynthesis.cancel();
     }
 
-    let url = "";
-    let t = 內容.trim();
+    let filePath = "";
+    let t = text.trim();
 
     // 🎯 確保每一種情況都有對應的檔案
     if (t === "好球") {
-        url = "strike.mp3";
+        filePath = "strike.mp3";
     } else if (t === "壞球") {
-        url = "balls.mp3";
+        filePath = "balls.mp3";
     } else if (t === "全壘打") {
-        url = "homerun.mp3";
+        filePath= "homerun.mp3";
     } else if (t === "一壘安打" || t === "二壘安打" || t === "三壘安打" || t === "安打") {
-        url = "hit.mp3";
+        filePath = "hit.mp3";
     } else if (t === "界外球") {
-        url = "foulball.mp3";
+        filePath = "foulball.mp3";
     } else if (t === "擊中球") {
-        url = "hit.mp3"; // 擊中球播放擊球聲
+        filePath = "hit.mp3"; // 擊中球播放擊球聲
     } else if (
         t === "滾地球出局" || 
         t === "高飛球接殺" || 
         t === "平飛球接殺" || 
         t === "雙殺打" 
     ) {
-        url = "out.mp3"; // 這些狀況統一播放裁判出局聲
+        filePath = "out.mp3"; // 這些狀況統一播放裁判出局聲
     }
 
     // 播放音效
