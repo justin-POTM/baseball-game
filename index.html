@@ -522,13 +522,13 @@ function playSound(content) {
         volume = 0.4;
     } else if (t === "全壘打") {
         url = "homerun.mp3";
-        volume = 0.8;
+        volume = 0.6;
     } else if (t === "安打") {
         url = "hit.mp3";
         volume = 0.6;
     } else if (t === "界外") {
         url = "foulball.mp3";
-        volume = 0.5;
+        volume = 0.3;
     } else if (t === "出局") {
         url = "out.mp3";
         volume = 0.5;
@@ -608,7 +608,7 @@ function playSound(content) {
                 // 💡 玩家擊球翻牌結果語音對應
                 let resultText = chosenObject.type;
                 if (resultText.includes("全壘打")) playSound("全壘打");
-                else if (resultText.includes("安打")) playSound("安打");
+                else if (resultText.includes("安打"));
                 else if (resultText.includes("界外")) playSound("界外");
                 else playSound("出局");
 
