@@ -220,11 +220,10 @@ function playBGM() {
 }
 
 function playBaseballManVoice(text) {
-    let url = "";
     let t = text.trim();
     let speakText = "";
 
-    // 🔍 1. 先判定要把中文用詞轉換成什麼「英文語音」
+    // 🔍 1. 將你的中文變數精準對應到英文裁判宣告
     if (t === "Strike!" || t === "好球") {
         speakText = "Strike!";
     } else if (t === "Ball!" || t === "壞球") {
@@ -247,28 +246,52 @@ function playBaseballManVoice(text) {
         speakText = "Out!";
     }
 
-    // 🔍 2. 如果有要說的英文，就直接呼叫「大廠官方雲端男聲 API」
-    if (speakText) {
-        // 使用 Google 翻譯官方的 TTS 接口，強制使用美式英文 (en-US)
-        // 為了讓它聽起來像男生，我們後面可以放一個專屬的音軌轉換，或者是利用微軟的公共服務：
-        const encodedText = encodeURIComponent(speakText);
-        
-        // ⚡ 這是微軟跟 Google 官方維護的雲端發聲直連，發音非常標準、穩定、絕對不會 404
-        url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&q=${encodedText}`;
+    if (!speakText) return;
+
+    // 先強行取消之前還沒講完的話
+    window.speechSynthesis.cancel();
+
+    let utterance = new SpeechSynthesisUtterance(speakText);
+    utterance.lang = 'en-US'; // 強制美式英文
+    utterance.pitch = 0.8;    // 稍微壓低音調，聽起來更沉穩
+    utterance.rate = 0.95;    // 語速稍微放慢
+
+    // ⚡ 核心黑科技：強迫瀏覽器在發音清單裡搜尋「英文男聲」
+    // 瀏覽器雲端有一套極為逼真的 Google/Microsoft Natural Male 聲音
+    let voices = window.speechSynthesis.getVoices();
+    
+    // 篩選出包含 'male'、'david'、'mark'、'guy'、'natural' 等英文男聲關鍵字的語音
+    let maleVoice = voices.find(voice => 
+        voice.lang.startsWith('en') && 
+        (
+            voice.name.toLowerCase().includes('male') || 
+            voice.name.toLowerCase().includes('david') || 
+            voice.name.toLowerCase().includes('mark') || 
+            voice.name.toLowerCase().includes('guy') || 
+            voice.name.toLowerCase().includes('natural')
+        )
+    );
+
+    // 如果找到了官方的優質男聲，就強制套用
+    if (maleVoice) {
+        utterance.voice = maleVoice;
+        console.log("成功啟用雲端高品質男聲發音：", maleVoice.name);
+    } else {
+        // 防呆：如果真的找不到男聲，至少找一個非預設的英文聲音
+        let anyEnglishVoice = voices.find(voice => voice.lang.startsWith('en'));
+        if (anyEnglishVoice) {
+            utterance.voice = anyEnglishVoice;
+        }
     }
 
-    // 🔍 3. 執行播放
-    if (url) {
-        let audio = new Audio(url);
-        audio.volume = 1.0;
-        
-        // 部分瀏覽器對 Google TTS 的速度有些敏感，稍微調整播放速度 (0.95 聽起來更低沉、更有磁性)
-        audio.defaultPlaybackRate = 0.95; 
-        
-        audio.play().catch(e => {
-            console.log("播放失敗，瀏覽器需要玩家先點擊畫面互動才能播音效：", e);
-        });
-    }
+    window.speechSynthesis.speak(utterance);
+}
+
+// 💡 解決瀏覽器非同步載入語音清單的問題（非常重要！）
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+    window.speechSynthesis.onvoiceschanged = function() {
+        console.log("瀏覽器語音清單已加載，男聲引擎準備就緒。");
+    };
 }
         
         // --- Canvas 與核心幾何配置（45度完美對稱 1/4 圓結構） ---
