@@ -1033,16 +1033,24 @@ function checkInningStatus() {
 
             // 判斷最後顯示的勝負標題
             let resultText = "";
+            let diff = totalAway - totalHome; // 正數代表對手領先，負數代表玩家領先
+
             if (totalHome > totalAway) {
+                // 玩家贏球 (diff 會是負數)
                 if (gameState.isWalkOff) {
                     resultText = `🏁 終場結束！玩家擊出再見得分，以 ${totalHome}X-${totalAway} 贏得勝利！🏆`;
                 } else {
                     resultText = `🏁 終場結束！玩家以 ${totalHome}-${totalAway} 贏得勝利！🏆`;
                 }
-            } else if (totalAway > totalHome) {
-                resultText = `🏁 終場結束！AI 以 ${totalAway}-${totalHome} 險勝。😭`;
-            } else {
+            } else if (diff === 0) {
+                // 平局
                 resultText = `🏁 終場結束！鏖戰 12 局未分勝負，兩隊以 ${totalHome}-${totalAway} 握手言和！🤝`;
+            } else if (diff === 1) {
+                // 惜敗 (輸 1 分)
+                resultText = `🏁 終場結束！玩家以 ${totalHome}-${totalAway} 惜敗。😭`;
+            } else {
+                // 大比分落敗 (diff >= 2)
+                resultText = `🏁 終場結束！玩家以 ${totalHome}-${totalAway} 落敗。😭`;
             }
             
             let statsHtml = `
